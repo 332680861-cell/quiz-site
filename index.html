@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线测评中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2563eb; --primary-light: #3b82f6;
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+            --gray-300: #d1d5db; --gray-500: #6b7280; --gray-700: #374151;
+            --gray-900: #111827; --white: #ffffff;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+            --radius: 12px;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--gray-50); color: var(--gray-900); line-height: 1.6; min-height: 100vh;
+        }
+        .container { max-width: 768px; margin: 0 auto; padding: 0 20px; }
+        header {
+            background: var(--white); border-bottom: 1px solid var(--gray-200);
+            padding: 16px 0; position: sticky; top: 0; z-index: 100;
+        }
+        .header-inner { display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 20px; font-weight: 700; color: var(--gray-900); }
+        .logo span { color: var(--primary); }
+        .page { display: none; padding: 32px 0 60px; }
+        .page.active { display: block; }
+        .hero { text-align: center; margin-bottom: 40px; }
+        .hero h1 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+        .hero p { font-size: 16px; color: var(--gray-500); }
+        .quiz-list { display: grid; gap: 16px; }
+        .quiz-card {
+            background: var(--white); border-radius: var(--radius); padding: 24px;
+            box-shadow: var(--shadow); cursor: pointer; transition: all 0.2s ease;
+            border: 1px solid var(--gray-100);
+        }
+        .quiz-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .quiz-icon {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 12px; display: flex; align-items: center;
+            justify-content: center; font-size: 24px; margin-bottom: 16px;
+        }
+        .quiz-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .quiz-card p { font-size: 14px; color: var(--gray-500); margin-bottom: 16px; }
+        .quiz-meta { display: flex; gap: 16px; font-size: 13px; color: var(--gray-500); }
+        .quiz-meta span { display: flex; align-items: center; gap: 4px; }
+        .quiz-header { margin-bottom: 32px; }
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 6px; color: var(--gray-500);
+            font-size: 14px; cursor: pointer; margin-bottom: 20px; padding: 8px 0; border: none; background: none;
+        }
+        .back-btn:hover { color: var(--gray-700); }
+        .quiz-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .quiz-desc { font-size: 15px; color: var(--gray-500); }
+        .progress-bar {
+            height: 4px; background: var(--gray-200); border-radius: 2px;
+            margin: 24px 0; overflow: hidden;
+        }
+        .progress-fill { height: 100%; background: var(--primary); border-radius: 2px; transition: width 0.3s ease; }
+        .question-counter { font-size: 13px; color: var(--gray-500); margin-bottom: 8px; }
+        .question-card {
+            background: var(--white); border-radius: var(--radius); padding: 24px;
+            box-shadow: var(--shadow); margin-bottom: 24px;
+        }
+        .question-text { font-size: 17px; font-weight: 600; margin-bottom: 20px; line-height: 1.5; }
+        .options { display: grid; gap: 12px; }
+        .option {
+            padding: 16px; border: 2px solid var(--gray-200); border-radius: 10px;
+            cursor: pointer; transition: all 0.2s ease; font-size: 15px;
+        }
+        .option:hover { border-color: var(--primary-light); background: #f0f7ff; }
+        .option.selected { border-color: var(--primary); background: #eff6ff; }
+        /* 量表题 */
+        .likert-scale { display: flex; gap: 8px; justify-content: space-between; }
+        .likert-option {
+            flex: 1; padding: 14px 6px; border: 2px solid var(--gray-200); border-radius: 10px;
+            cursor: pointer; transition: all 0.2s ease; font-size: 13px; text-align: center; line-height: 1.4;
+        }
+        .likert-option:hover { border-color: var(--primary-light); background: #f0f7ff; }
+        .likert-option.selected { border-color: var(--primary); background: #eff6ff; font-weight: 600; }
+        .nav-btns { display: flex; gap: 12px; margin-top: 24px; }
+        .btn {
+            flex: 1; padding: 14px 24px; border-radius: 10px; font-size: 15px;
+            font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease;
+        }
+        .btn-primary { background: var(--primary); color: var(--white); }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; }
+        .btn-secondary { background: var(--white); color: var(--gray-700); border: 1px solid var(--gray-300); }
+        .btn-secondary:hover { background: var(--gray-50); }
+        .result-card {
+            background: var(--white); border-radius: var(--radius); padding: 32px 24px;
+            box-shadow: var(--shadow-md); text-align: center;
+        }
+        .result-icon {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 36px; margin: 0 auto 24px;
+        }
+        .result-title { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+        .result-desc {
+            font-size: 14px; color: var(--gray-700); margin-bottom: 32px;
+            line-height: 1.8; text-align: left; white-space: pre-line;
+        }
+        .result-desc strong { color: var(--gray-900); font-weight: 600; }
+        .result-scores { text-align: left; margin-bottom: 32px; }
+        .score-item { margin-bottom: 16px; }
+        .score-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+        .score-label span:first-child { font-weight: 500; }
+        .score-label span:last-child { color: var(--gray-500); }
+        .score-bar { height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden; }
+        .score-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 4px; transition: width 0.5s ease; }
+        footer {
+            text-align: center; padding: 24px 0; font-size: 13px; color: var(--gray-500);
+            border-top: 1px solid var(--gray-200); background: var(--white);
+        }
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 24px; }
+            .quiz-title { font-size: 20px; }
+            .question-text { font-size: 16px; }
+            .result-card { padding: 24px 20px; }
+            .likert-option { font-size: 11px; padding: 10px 4px; }
+        }
+    </style>
+</head>
+<body>
+    <header><div class="container header-inner"><div class="logo">测评<span>中心</span></div></div></header>
+    <main class="container">
+        <div id="home-page" class="page active">
+            <div class="hero"><h1>一些没什么用但很好玩的测评</h1><p>闲着也是闲着，测一下呗</p></div>
+            <div class="quiz-list" id="quiz-list"></div>
+        </div>
+        <div id="quiz-page" class="page">
+            <div class="quiz-header">
+                <button class="back-btn" onclick="goHome()">← 返回</button>
+                <h2 class="quiz-title" id="quiz-title"></h2>
+                <p class="quiz-desc" id="quiz-desc"></p>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="question-counter" id="question-counter"></div>
+            <div class="question-card">
+                <p class="question-text" id="question-text"></p>
+                <div id="answer-area"></div>
+            </div>
+            <div class="nav-btns">
+                <button class="btn btn-secondary" id="prev-btn" onclick="prevQuestion()" style="display:none;">上一题</button>
+                <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>下一题</button>
+            </div>
+        </div>
+        <div id="result-page" class="page">
+            <button class="back-btn" onclick="goHome()">← 返回首页</button>
+            <div class="result-card">
+                <div class="result-icon">✓</div>
+                <h2 class="result-title" id="result-title"></h2>
+                <p class="result-desc" id="result-desc"></p>
+                <div class="result-scores" id="result-scores"></div>
+                <button class="btn btn-primary" onclick="goHome()">返回首页</button>
+            </div>
+        </div>
+    </main>
+    <footer><div class="container"><p>© 2026 测评中心 · 免费在线测评</p></div></footer>
+    <script>
+        const likertLabels = ['非常符合', '比较符合', '不一定', '比较不符合', '非常不符合'];
+        const likertScores = [3, 2, 1, 0, 0];
+
+        const quizzes = [
+            {
+                id: 'drinking',
+                icon: '🍺',
+                title: '酒桌性格测评',
+                description: '测测你是哪种酒桌人格？是行走的二锅头还是人形小甜酒？20道题见分晓',
+                questionCount: 20,
+                duration: '约5分钟',
+                questions: [
+                    { text: '周五晚上十点，群里突然有人喊"出来喝点？"，你的内心OS是？', options: [ { text: '我已经穿好鞋了，地址发我', scores: { A: 3 } }, { text: '谁啊？都有谁？有我不喜欢的人我就不去了', scores: { D: 2, B: 1 } }, { text: '嘴上说"哎呀今天好累"，但手已经开始打车了', scores: { C: 3 } }, { text: '已读不回，假装手机没电', scores: { D: 3 } } ] },
+                    { text: '到了包间门口，你的第一动作是？', options: [ { text: '推门进去声音最大："兄弟们我来了！"', scores: { A: 3 } }, { text: '先扫一眼今天在场都有谁，大脑快速盘算', scores: { B: 3 } }, { text: '悄悄从后门进去，找个不显眼的角落猫着', scores: { C: 2, D: 1 } }, { text: '站在门口犹豫三秒，思考现在跑还来不来得及', scores: { D: 3 } } ] },
+                    { text: '酒刚上桌，有人提议"先走一个"，你是？', options: [ { text: '第一个站起来，杯子举得比谁都高', scores: { A: 3 } }, { text: '等主要领导或者长辈先开口，我再跟着举杯', scores: { B: 3 } }, { text: '抿一小口然后疯狂吃菜，假装自己喝了很多', scores: { C: 3 } }, { text: '端起杯子闻了一下说"好酒"，然后放下了', scores: { D: 3 } } ] },
+                    { text: '有人端着杯子过来敬你，你？', options: [ { text: '直接站起来："敬什么敬，干了！"', scores: { A: 3 } }, { text: '杯口比对方低半公分，微笑说"不敢当不敢当"', scores: { B: 3 } }, { text: '脸瞬间红了，紧张到差点把酒洒身上', scores: { C: 3 } }, { text: '用饮料杯碰了一下："今天真不能喝，以茶代酒"', scores: { D: 2, C: 1 } } ] },
+                    { text: '酒过三巡，大家开始玩骰子，你的表现是？', options: [ { text: '骰盅拍得震天响，"五个六！开！"', scores: { A: 3 } }, { text: '不声不响算概率，赢的人都不知道自己怎么输的', scores: { B: 3 } }, { text: '根本不知道规则，跟着傻笑，输了就喝', scores: { C: 3 } }, { text: '已经退出战局，在旁边安静地剥毛豆', scores: { D: 3 } } ] },
+                    { text: '喝到一半，你的微信开始发生什么变化？', options: [ { text: '群里疯狂发语音，一条60秒接一条60秒', scores: { A: 3 } }, { text: '精准找到今天在场最有价值的人，加了微信', scores: { B: 3 } }, { text: '给一个三年没联系的人发了"你最近好吗"', scores: { C: 3 } }, { text: '手机不知道什么时候被自己锁了，一直没碰过', scores: { D: 3 } } ] },
+                    { text: '桌上有人开始吹牛，你的反应是？', options: [ { text: '比他还能吹，场面直接变成辩论赛', scores: { A: 3 } }, { text: '附和+捧场："真的吗？太厉害了吧！"（内心：你接着编）', scores: { B: 3 } }, { text: '认真听，真的被唬住了', scores: { C: 3 } }, { text: '低头刷手机，灵魂已经回家', scores: { D: 3 } } ] },
+                    { text: '有人提议"再来一轮"，你已经喝了四杯了，你会？', options: [ { text: '"才四杯？我当漱口呢！满上！"', scores: { A: 3 } }, { text: '"行，不过最后一杯了哈"（然后又喝了三杯）', scores: { B: 2, A: 1 } }, { text: '眼神已经开始飘了，但还在强撑着说"我没事"', scores: { C: 3 } }, { text: '默默把杯子倒扣在桌上，用肢体语言表示拒绝', scores: { D: 3 } } ] },
+                    { text: '酒桌上最让你有成就感的事是？', options: [ { text: '把对面所有人都喝趴下', scores: { A: 3 } }, { text: '让每个人都觉得被照顾到，散了局还有人夸我会办事', scores: { B: 3 } }, { text: '有人跟我说"你喝多了真可爱"', scores: { C: 3 } }, { text: '全程清醒地看一群人表演，感觉自己像在看真人秀', scores: { D: 3 } } ] },
+                    { text: '喝多了之后，你最常做的事是？', options: [ { text: '站在椅子上唱歌，拦都拦不住', scores: { A: 3 } }, { text: '开始挨个做思想工作，像居委会大妈', scores: { B: 2, C: 1 } }, { text: '抱着朋友说"你是我最好的朋友"，说完就哭了', scores: { C: 3 } }, { text: '突然很困，找个沙发就睡着了', scores: { D: 3 } } ] },
+                    { text: '第二天醒来看到昨晚的聊天记录，你的反应是？', options: [ { text: '"才发了这么点？我昨晚明明很克制啊"', scores: { A: 3 } }, { text: '快速检查有没有说错话得罪人，还好没有', scores: { B: 3 } }, { text: '捂脸，脚趾抠出三室一厅，给那个人发消息"昨晚喝多了你别当真"', scores: { C: 3 } }, { text: '完全没有聊天记录，因为昨晚压根没碰手机', scores: { D: 3 } } ] },
+                    { text: '朋友说"你酒量真好/真差"，你会怎么回？', options: [ { text: '"这算啥？我还没认真呢！"', scores: { A: 3 } }, { text: '"还行还行，主要是大家开心"', scores: { B: 3 } }, { text: '"我平时不这样的…"（心虚地笑）', scores: { C: 3 } }, { text: '"我喝的又不是酒，是寂寞"', scores: { D: 3 } } ] },
+                    { text: '如果是跟暧昧对象单独喝酒，你会？', options: [ { text: '故意多喝点，展现我的豪迈', scores: { A: 2, C: 1 } }, { text: '精心选了一家氛围好的bar，连座位都提前踩过点', scores: { B: 3 } }, { text: '一杯就上头了，然后开始疯狂释放信号', scores: { C: 3 } }, { text: '点了一杯度数最低的，全程在聊人生哲学', scores: { D: 3 } } ] },
+                    { text: '酒局散场的时候，你通常是？', options: [ { text: '最后一个走的，还要拉着老板再聊半小时', scores: { A: 3 } }, { text: '挨个确认大家都叫到车了才走', scores: { B: 3 } }, { text: '被人扶着出去的，已经记不清怎么回的家', scores: { C: 3 } }, { text: '第一个走的，趁还没人注意悄悄撤退', scores: { D: 3 } } ] },
+                    { text: '有人喝多了开始哭，你会？', options: [ { text: '拍拍肩膀："哭啥！再来一杯就好了！"', scores: { A: 3 } }, { text: '坐到旁边陪着聊，顺便递上纸巾和温水', scores: { B: 3 } }, { text: '跟着一起哭，两个醉抱头痛哭', scores: { C: 3 } }, { text: '默默站起来去洗手间，给彼此一点空间', scores: { D: 3 } } ] },
+                    { text: '如果给"酒桌社交恐惧症"打分（1-10），你觉得自己是？', options: [ { text: '0分，我就是社交恐怖分子', scores: { A: 3 } }, { text: '3分，有套路就不怕，怕的是没套路', scores: { B: 3 } }, { text: '8分，每次去之前要做十分钟心理建设', scores: { C: 3 } }, { text: '5分吧，不恐惧但也不享受，就是…无所谓', scores: { D: 3 } } ] },
+                    { text: '你理想中的完美酒局是？', options: [ { text: '一帮兄弟+一箱白酒+一堆烤串+喝到天亮', scores: { A: 3 } }, { text: '几个有用的人+高档餐厅+喝得恰到好处+拿到资源', scores: { B: 3 } }, { text: '三两知己+小酒馆+微醺+说一些平时不敢说的话', scores: { C: 3 } }, { text: '在家一个人+一部好电影+一杯红酒+谁也别来找我', scores: { D: 3 } } ] },
+                    { text: '你觉得酒对你来说最像什么？', options: [ { text: '武器——用来征服的', scores: { A: 3 } }, { text: '工具——用来社交的', scores: { B: 3 } }, { text: '催化剂——用来释放感情的', scores: { C: 3 } }, { text: '背景音——有它没它我都是我自己', scores: { D: 3 } } ] },
+                    { text: '朋友对你的酒后评价最可能是？', options: [ { text: '"他喝多了就是个疯子，但是个快乐的疯子"', scores: { A: 3 } }, { text: '"他就算喝多了也很体面，从来不失控"', scores: { B: 3 } }, { text: '"她喝多了真的太可爱了，想把她带回家"', scores: { C: 3 } }, { text: '"他喝多了和没喝一样，完全看不出来"', scores: { D: 3 } } ] },
+                    { text: '如果可以给你的酒桌人格配一种BGM，你会选？', options: [ { text: '《好日子》——喜庆、热闹、锣鼓喧天', scores: { A: 3 } }, { text: '《友谊地久天长》——温情、得体、皆大欢喜', scores: { B: 3 } }, { text: '《月亮代表我的心》——温柔、深情、微醺上头', scores: { C: 3 } }, { text: '《寂静之声》——安静、淡然、众人皆醉我独醒', scores: { D: 3 } } ] }
+                ],
+                calculateResult: function(answers) {
+                    let scores = { A: 0, B: 0, C: 0, D: 0 };
+                    answers.forEach(a => { if (a && a.scores) Object.keys(a.scores).forEach(k => scores[k] += a.scores[k]); });
+                    const total = Object.values(scores).reduce((a, b) => a + b, 0);
+                    const maxKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+                    const dims = [
+                        { name: '狂暴指数', key: 'A' }, { name: '社交手腕', key: 'B' },
+                        { name: '感性程度', key: 'C' }, { name: '佛系程度', key: 'D' }
+                    ];
+                    const scoreBars = dims.map(d => ({ name: d.name, label: `${Math.round(scores[d.key] / total * 100)}%`, pct: Math.round(scores[d.key] / total * 100) }));
+                    const results = {
+                        A: { title: '🔥 你是「行走的二锅头」', desc: '【人格总览】\n你就是那种能量值拉满的人——不管在什么场合，只要你在，场子就不会冷。不是你想当焦点，是你根本就藏不住。你的性格底色是"直接"：喜欢就是喜欢，不爽就是不爽，绕弯子这件事你学了一百遍也没学会。\n\n【社交模式】\n你是社交场上的"气氛组组长"，但不是靠套路，是靠真诚的热情。你交朋友的方式很简单——一起疯一次就知道是不是自己人了。你的朋友圈人数不多，但每一个都是能半夜打电话把对方叫出来吃烧烤的关系。\n\n【恋爱风格】\n谈恋爱的时候你是那种"喜欢就要让对方知道"的类型。你不会搞暧昧、不会玩欲擒故纵，喜欢一个人就是直接冲。你的浪漫不是烛光晚餐那一套，而是"你随口说了一句想吃哪家店，第二天我就排了两小时队买回来了"。\n\n【工作画像】\n工作中你是行动派，想到就做，做就做到底。你最烦的事情是"开会开了两个小时什么都没决定"。你适合那种需要冲劲和执行力的岗位——销售、创业、项目管理。\n\n【内心世界】\n别看你表面上大大咧咧，其实你比任何人都害怕"被冷落"和"被抛弃"。你的热闹和积极，某种程度上也是在确认"我在这个群体里是重要的"。\n\n【给你的小建议】\n你最大的优点是真诚和热情，但也要学会在适当的时候收一收。不是所有人都能接住你的能量密度，这不是他们的问题，也不是你的问题，只是频率不同。', scores: scoreBars },
+                        B: { title: '🥂 你是「人形鸡尾酒」', desc: '【人格总览】\n你是那种"在任何环境里都能活得很好"的人。不是因为你圆滑，而是因为你有一种罕见的天赋——能迅速感知周围的气氛并做出最合适的反应。你的性格底色是"分寸感"。\n\n【社交模式】\n你是社交场上的"润滑剂"。一群人里有两个人快吵起来了，你一句话就能把气氛拉回来。你交朋友的方式不是轰轰烈烈，而是润物细无声。你的朋友圈很广，但说句实话，真正走进你内心的人并不多。\n\n【恋爱风格】\n谈恋爱的时候你是那种"看似温柔实则清醒"的类型。你不会因为爱一个人就失去自我，你的底线感很强。你表达爱的方式很细腻——记得对方随口说的一句话、在对方低落的时候默默陪伴。\n\n【工作画像】\n工作中你是团队里最让人放心的存在。领导觉得你靠谱，同事觉得你好相处，客户觉得你专业。你擅长协调和沟通，是那种能把一盘散沙捏成团的人。\n\n【内心世界】\n你最大的疲惫来自于"永远在照顾别人的感受"。你有没有过这样的时刻——回到家关上门，突然觉得一句话都不想说了？因为你白天说的每一句话都是经过思考的。\n\n【给你的小建议】\n你不需要对所有人都那么好。偶尔也"失态"一次，说错一句话，得罪一个人，你会发现——天不会塌。真正值得你交往的人，喜欢的不是你的完美，而是你的真实。', scores: scoreBars },
+                        C: { title: '🍑 你是「微醺小甜酒」', desc: '【人格总览】\n你是那种"外表看起来没什么攻击力，但内心情感密度极高"的人。你的性格底色是"真诚到近乎毫无保留"——你不擅长伪装，不喜欢算计，相信人性中善的部分。\n\n【社交模式】\n你在陌生环境里一开始会有些拘谨，但只要有人对你释放善意，你就会快速卸下防备。你交朋友的方式不是主动出击，而是"被温暖之后加倍回馈"。\n\n【恋爱风格】\n谈恋爱的时候你是那种"一旦喜欢上就是100%"的类型。你会把对方放在很重要的位置，会记住TA说过的每一句话。最大的风险是：你太容易在感情里失去边界感。\n\n【工作画像】\n工作中你是那种"用心做事"的人。你也许不是效率最高的，但你一定是最有温度的。你适合需要共情力和耐心的工作——教育、心理咨询、创意设计。\n\n【内心世界】\n你的内心比外表看起来的丰富得多。你经常会因为一件小事感动、因为一句话难过、因为一个眼神想很多。你不是矫情，你是感知力太强。\n\n【给你的小建议】\n你的真诚和柔软是这个世界上最珍贵的品质，但请记住：不是所有人都配得上你的好。学会分辨"值得你掏心掏肺的人"和"只需要礼貌相待的人"。', scores: scoreBars },
+                        D: { title: '🍵 你是「冰镇清酒」', desc: '【人格总览】\n你是那种"人在人群中但灵魂在旁边"的存在。你的性格底色是"独立"——不是故意跟世界保持距离，而是你天生就需要一个属于自己的空间。\n\n【社交模式】\n你有一套自己的社交算法：无效社交一律过滤，有效社交精准投入。你交朋友的方式很慢热——别人用一个月就能跟你称兄道弟，你可能需要半年才觉得"这个人可以交"。但一旦你认定了对方，那是一段极其稳定的关系。\n\n【恋爱风格】\n谈恋爱的时候你是那种"看似淡定实则深情"的类型。你不会每天说一百遍"我爱你"，但你会在对方最需要的时候默默出现。你的爱不是轰轰烈烈的烟火，而是细水长流的恒温。\n\n【工作画像】\n工作中你是独立思考者。你不太擅长在头脑风暴中第一个发言，但你会在大家都说完之后抛出一个"让全场安静三秒"的观点。你适合需要深度思考和独立判断的工作。\n\n【内心世界】\n你的内心世界极其丰富，只是你很少邀请别人进来。你喜欢一个人待着不是因为你孤独，而是因为独处是你充电的方式。\n\n【给你的小建议】\n你的独立和清醒是难得的财富，但人是社会性动物，完全的自给自足是不存在的。偶尔也主动一次、示弱一次、需要别人一次——这不是软弱，这是给那些在乎你的人一个靠近你的机会。', scores: scoreBars }
+                    };
+                    return results[maxKey];
+                }
+            },
+            {
+                id: 'anxiety',
+                icon: '📊',
+                title: '投流焦虑等级测评',
+                description: '请根据你最近的真实感受，判断以下描述与你的符合程度',
+                questionCount: 40,
+                duration: '约4分钟',
+                scaleType: true,
+                questions: [
+                    { text: '每天早上睁开眼的第一件事是看广告后台数据', scores: { B: 3, A: 1 } },
+                    { text: '每隔不到半小时就会刷新一次广告后台', scores: { B: 3 } },
+                    { text: '看到成本超标会立刻心跳加速、手心出汗', scores: { B: 3 } },
+                    { text: '成本崩了的时候，第一反应是"赶紧建计划救回来"', scores: { A: 3 } },
+                    { text: '周末或休假的时候也会忍不住看数据', scores: { B: 3 } },
+                    { text: '做梦梦到数据崩了，然后吓醒', scores: { B: 3 } },
+                    { text: '看到竞品爆量了会立刻开始分析它的素材和定向', scores: { A: 3, F: 1 } },
+                    { text: '手机里装了至少三个跟投流相关的工具APP', scores: { A: 2, F: 1 } },
+                    { text: '数据波动大的时候会完全吃不下饭', scores: { B: 3 } },
+                    { text: '成本超标了我反而会兴奋，觉得有挑战才有意思', scores: { A: 3 } },
+                    { text: '已经不太会因为数据波动而情绪起伏了', scores: { C: 3, D: 2 } },
+                    { text: '客户或老板问效果的时候我会紧张', scores: { B: 3, G: 2 } },
+                    { text: '工作台上至少有两块屏幕用来监控数据', scores: { A: 3 } },
+                    { text: '下班后能完全不想工作的事情', scores: { D: 3 } },
+                    { text: '看到群里有人晒爆量数据会焦虑到睡不着', scores: { B: 3 } },
+                    { text: '会主动在周末测试新计划，因为觉得周末流量不一样', scores: { A: 3 } },
+                    { text: '数据好不好的，反正该吃吃该喝喝', scores: { D: 3 } },
+                    { text: '会花大量时间分析每条计划的数据变化趋势', scores: { A: 2, F: 2 } },
+                    { text: '觉得投流这个事，焦虑也没用，不如随缘', scores: { C: 3 } },
+                    { text: '做投流之后我的发际线或睡眠质量明显变差了', scores: { B: 3 } },
+                    { text: '我会同时跑十几条计划，相信总有一条能爆', scores: { E: 3 } },
+                    { text: '我更愿意花时间去打磨一条素材，而不是同时开很多计划', scores: { A: 2 } },
+                    { text: '我相信算法最终会找到最优解，只需要给它时间和预算', scores: { F: 3 } },
+                    { text: '每次汇报工作时，我都会把数据包装得很好看', scores: { G: 3 } },
+                    { text: '我经常幻想自己转行去做其他事情', scores: { H: 3 } },
+                    { text: '建计划对我来说就像买彩票，每条都有可能爆', scores: { E: 3 } },
+                    { text: '如果一条素材没跑出来，我会立刻换下一批', scores: { E: 2, A: 1 } },
+                    { text: '我会在深夜研究oCPM和eCPM的底层逻辑', scores: { F: 3 } },
+                    { text: '给老板汇报的时候，我擅长用图表让数据看起来更漂亮', scores: { G: 3 } },
+                    { text: '我的招聘简历已经更新了半年了但一直没投出去', scores: { H: 3 } },
+                    { text: '我能接受一周没有爆量，但不能接受一天不看数据', scores: { B: 2, F: 1 } },
+                    { text: '我会在同行群里疯狂请教别人的投放策略', scores: { A: 2, B: 1 } },
+                    { text: '我觉得创意比定向和出价更重要', scores: { E: 3 } },
+                    { text: '我觉得出价的科学性比创意更重要', scores: { F: 3 } },
+                    { text: '我每周都会花时间做数据复盘PPT', scores: { G: 3 } },
+                    { text: '我觉得再做两年投流我就得换个行业了', scores: { H: 3 } },
+                    { text: '我会在爆了一条计划后疯狂加码，试图乘胜追击', scores: { E: 2, A: 1 } },
+                    { text: '我更相信自己的投放直觉而不是系统推荐', scores: { A: 2, E: 1 } },
+                    { text: '我觉得系统推荐出价比自己调价更靠谱', scores: { F: 3 } },
+                    { text: '如果数据不好，我会先把报表美化一下再交给领导', scores: { G: 3 } }
+                ],
+                calculateResult: function(answers) {
+                    let scores = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, G: 0, H: 0 };
+                    answers.forEach(a => { if (a && a.scores) Object.keys(a.scores).forEach(k => scores[k] += a.scores[k]); });
+                    const total = Object.values(scores).reduce((a, b) => a + b, 0) || 1;
+                    const maxKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+                    const dims = [
+                        { name: '鸡血指数', key: 'A' }, { name: '焦虑指数', key: 'B' },
+                        { name: '佛系指数', key: 'C' }, { name: '摆烂指数', key: 'D' },
+                        { name: '赌性指数', key: 'E' }, { name: '理性指数', key: 'F' },
+                        { name: '表演指数', key: 'G' }, { name: '跑路指数', key: 'H' }
+                    ];
+                    const scoreBars = dims.map(d => ({ name: d.name, label: `${Math.round(scores[d.key] / total * 100)}%`, pct: Math.round(scores[d.key] / total * 100) }));
+                    const results = {
+                        A: { title: '⚡ 你是「鸡血战神」', desc: '【焦虑诊断】\n你不是在焦虑，你是在战斗。成本崩了？建计划。素材衰退？出新素材。竞品抢量？拆了它重新打。你的焦虑不是内耗型的，是外放型的——越有问题越兴奋，越是危机越能激发你的斗志。如果说其他投手面对数据崩溃是在emo，你面对数据崩溃是在写作战计划。\n\n【工作画像】\n你是团队里的发动机。领导最喜欢你因为你是那种"给了目标就能出结果"的人。你的工作习惯非常系统化：数据监控、素材管理、竞品分析、A/B测试，你都有自己的方法论。你不是在投流，你是在运营一套精密的投放系统。你的桌面大概率是三块屏幕起步。\n\n【生活状态】\n但说真的，你很难真正"下班"。哪怕人在外面吃饭，脑子里也在想"这个落地页的转化路径是不是可以优化一下"。你的生活和工作之间的边界非常模糊，这不是因为你不会生活，而是因为你从工作中获得的成就感本身就是一种"精神兴奋剂"。\n\n【感情模式】\n谈恋爱的时候你也是那种"解决问题型"的人。对方抱怨一件事，你的第一反应不是共情而是给方案——"你这个情况可以这样优化"。你的伴侣有时候会觉得你像个项目经理在谈恋爱，但TA也知道，你是真的在乎。\n\n【内心真相】\n你表面上看起来充满干劲、无坚不摧，但其实你比任何人都害怕"失控"。你的战斗姿态，某种程度上也是在对抗内心的不安全感——"只要我一直在行动，事情就不会变糟"。\n\n【处方】\n你的能量是天赋，但也需要管理。建议每周给自己强制安排半天"不碰数据"的时间，去运动、去社交、去发呆。你会发现——天不会塌，而且回来后思路更清晰。', scores: scoreBars },
+                        B: { title: '🌙 你是「凌晨三点刷后台型」', desc: '【焦虑诊断】\n恭喜你（或者说同情你），你是信息流行业的焦虑症晚期患者。你的症状包括但不限于：每隔五分钟刷新一次后台、做梦都在看数据、半夜两点突然惊醒然后打开APP确认成本没有崩。你不是在投流，你是在跟算法谈一场让你夜不能寐的恋爱——而且明显你是被虐的那一方。\n\n【工作画像】\n你对数据的敏感度其实很高，因为你的注意力几乎全在上面。你能察觉到一条计划的微妙变化，能在成本刚开始波动的时候就发现不对劲。但问题是——你发现得太早了。很多时候数据只是在正常波动，你已经开始了全套应激反应。别人投流费钱，你投流费命。\n\n【生活状态】\n你的生活已经被"投流"这件事深度入侵了。吃饭的时候看数据、走路的时候想定向、洗澡的时候突然想到"那条计划是不是该关了"然后湿着手打开手机。你很难真正放松，因为你的大脑后台永远有一个进程在跑："监控广告数据.exe"。\n\n【感情模式】\n谈恋爱的时候你是那种"容易想多"的类型。对方回消息慢了你就会开始分析各种可能性——就像你分析数据波动一样。你的伴侣需要理解的是：你不是不信任TA，你是职业习惯。但你也需要学会：感情不是数据，不需要实时监控。\n\n【内心真相】\n你焦虑的根源不是数据，是"失控感"。你害怕的是"我不知道哪里出了问题"这种无力感。所以你拼命刷数据，不是因为数据本身有多重要，而是因为"看到数据"这个行为给了你一种"我在掌控"的错觉。\n\n【处方】\n第一步：把后台APP从手机首屏移到最后一页。第二步：设定"看数据时间窗口"。第三步：如果实在忍不住想看——那就看，但看完之后深呼吸三次，告诉自己"数据波动是正常的"。', scores: scoreBars },
+                        C: { title: '🍵 你是「已麻但还能救」', desc: '【焦虑诊断】\n你不是没有焦虑过，你是焦虑过太多次之后产生了抗体。你的状态介于"我还行"和"算了吧"之间——数据好的时候你没什么反应，数据差的时候你也没什么反应。不是因为你冷血，是因为你已经经历过太多起起落落，神经系统自动帮你降了灵敏度。\n\n【工作画像】\n你是团队里最稳定的存在。不是业绩最稳定，是情绪最稳定。成本崩了别人急得跳脚，你在旁边泡了杯茶说"正常波动"。你的工作风格是"抓大放小"——关键节点你会管，日常波动你不管。你的ROI往往不差，因为你不被情绪干扰判断。\n\n【生活状态】\n你的生活和工作之间有一条比较清晰的界线。下了班就是下了班，天大的事明天再说。你有一两个工作之外的爱好。朋友们觉得你这个人"挺好相处的"，因为你不会随时随地开始聊工作。你的口头禅是："焦虑有什么用。"\n\n【感情模式】\n谈恋爱的时候你是"稳定型依恋"。你不会因为对方一条消息没回就炸毛。你的伴侣跟你在一起很有安全感，因为你情绪稳定、不太作。但有时候对方也会觉得你"是不是没那么在乎"——因为你太淡定了。\n\n【内心真相】\n你的"麻"不是天生的，是被这个行业训练出来的。你曾经也是一个会因为一条计划衰退而睡不着的人，但后来你发现——大部分时候你急也没用。所以你学会了"放下"。但这种放下到底是真的释然，还是"算了算了"的消极回避？\n\n【处方】\n你的状态总体是健康的，但要注意一种风险：从"不焦虑"滑向"不上心"。建议偶尔也给自己打一点鸡血：学一个新技能、试一个新玩法。不是为了卷，是为了让自己重新感受到"我还在成长"。', scores: scoreBars },
+                        D: { title: '🧘 你是「淡定老炮」', desc: '【焦虑诊断】\n如果投流行业有"泰山崩于前而色不变"奖，你一定是终身成就奖获得者。你的焦虑等级低到几乎可以忽略——不是装出来的淡定，是真的不在乎了。成本崩了？"哦。"素材衰退了？"知道了。"你的情绪曲线是一条直线。\n\n【工作画像】\n你有两种可能：要么你是入行多年的老炮，见过大风大浪所以什么都不当事了；要么你是一个天生的"低情绪反应"体质，投流这个行业的波动对你来说就像看海浪——你知道它在动但你不会被它卷进去。你的"情绪能耗"极低，别人投流一天像打仗，你投流一天像喝茶。\n\n【生活状态】\n你的生活可能是这八个类型里最健康的。你能真正地下班、真正地周末不看手机、真正地度假时不回工作消息。你的身份认同不是"我是一个投手"而是"我是一个有各种面向的人，投流只是其中一面"。\n\n【感情模式】\n谈恋爱的时候你是"放手型"的伴侣。你给对方很大的空间，不查手机、不翻聊天记录。你的感情观是："如果一段关系需要我时刻盯着才能维持，那它本身就有问题。"这个逻辑跟你看待广告数据的逻辑一模一样。\n\n【内心真相】\n你的淡定可能是真正的智慧，也可能是"习得性漠然"。区分两者的标准是：你是因为看透了、理解了、所以放下了？还是因为累了、倦了、所以不想管了？前者是境界，后者是burnout。\n\n【处方】\n如果你是真的通透——请继续保持，你是这个行业里稀缺的清醒者。但如果你只是累了——建议你给自己放个假，真正的、完全脱离工作的那种。去一个没有信号的地方待三天，回来后问问自己：我还想做这件事吗？', scores: scoreBars },
+                        E: { title: '🎰 你是「创意赌徒」', desc: '【焦虑诊断】\n你的焦虑不来自数据本身，而来自"赌注"的大小。每一条新素材、每一条新计划对你来说都是一张彩票——你相信只要压对了，一条就能爆。你的焦虑峰值出现在"新素材刚上线等待判决"的那几个小时，比任何人的心跳都快。\n\n【工作画像】\n你的投放风格是"少而精"或者"大力出奇迹"。你不太喜欢那种同时开几十条计划慢慢优化的方式，你更喜欢集中火力：看准一个方向、砸一批素材、等结果。爆了就是英雄，没爆就换方向再来。你的工作节奏是大开大合的——要么爆量到服务器报警，要么空耗到怀疑人生。\n\n【生活状态】\n生活中你也是个喜欢"押注"的人。投资决策、消费选择、甚至交朋友，你都倾向于"看准了就all in"。你的朋友们觉得你这个人"很有魄力"，但也偶尔会担心你"万一赌错了怎么办"。你的回答通常是："不赌怎么知道？"\n\n【感情模式】\n谈恋爱的时候你是那种"一见钟情型"或者"认定了就不放手"的人。你不会在感情里慢慢试探，你喜欢就冲、不喜欢就撤。你的伴侣会觉得你很有激情，但偶尔也会觉得你太"上头"了——因为你的爱来得又快又猛。\n\n【内心真相】\n你赌的不是素材，是"可能性"。你内心深处相信自己是那个"下一把就能赢"的人。这种信念是你最大的动力，也是你最大的风险。你有没有想过：如果你把同样的精力放在"系统性优化"而不是"赌爆一条"上，结果会不会更好？\n\n【处方】\n你的直觉和魄力是天赋，但投流不是赌场，它是科学。建议你在"赌一把"之前，先做一个低成本的小测试——不是因为你怂，而是因为你值得用更稳定的方式赢。', scores: scoreBars },
+                        F: { title: '🤖 你是「算法信徒」', desc: '【焦虑诊断】\n你不焦虑数据，你信仰数据。你的焦虑来源不是波动本身，而是"我是不是没有给算法足够的数据来学习"。当成本崩了的时候，你不会像鸡血战神那样疯狂建计划，也不会像焦虑症患者那样疯狂刷新——你会冷静地分析：样本量够了没有？模型学习了没有？\n\n【工作画像】\n你是团队里的"理性大脑"。你相信系统的力量，相信算法比人更聪明。你的工作方式是：设定好参数，给够预算，让模型跑，然后根据数据反馈做精细化调整。你不喜欢"拍脑袋"做决策，每一个判断都要有数据支撑。你的Excel表格可能是全组最规范的。\n\n【生活状态】\n生活中你也是个"数据驱动"的人。你会记录自己的运动量、睡眠时间、消费明细。你的朋友们觉得你这个人"很靠谱但有点无趣"——因为你做什么都要"先分析一下"。但你自己知道：这不是无趣，这是对效率的极致追求。\n\n【感情模式】\n谈恋爱的时候你是那种"理性浪漫者"——你会分析两个人的匹配度、沟通模式、冲突频率，然后得出结论："我们很合适。"你的伴侣可能会觉得你太理性了，但你认为：真正的爱是建立在理解基础上的，不是盲目的激情。\n\n【内心真相】\n你相信算法，是因为你相信"规律"。你觉得世界是有序的、可预测的、可优化的。但偶尔——只是偶尔——你也会好奇：如果我放下数据，纯凭感觉做一次选择，会发生什么？\n\n【处方】\n你的理性和系统思维是这个行业的稀缺品质。但别忘了：算法的背后是人。建议你在下一次做决策的时候，也问问自己"直觉怎么说"——有时候，数据之外的答案反而更准确。', scores: scoreBars },
+                        G: { title: '🎭 你是「汇报表演家」', desc: '【焦虑诊断】\n你的焦虑不在数据上，在"怎么把数据说出去"上。数据好的时候你开心，数据差的时候你——开始做PPT。你的核心焦虑不是"ROI跌了"而是"我怎么让老板觉得ROI没跌"。你不是在投流，你是在运营一场持续的信息披露工程。\n\n【工作画像】\n你是团队里最懂"包装"的人。同样的数据，经你的手汇报出来，效果能差出30%。你擅长用同比代替环比、用累计数据代替单日数据、用"曝光量增长"来淡化"转化率下降"。这不是撒谎，这是"选择性呈现"。你的领导可能不知道真相，但你的同事都在默默学你的PPT技巧。\n\n【生活状态】\n生活中你也是个"形象管理大师"。你的朋友圈永远光鲜亮丽——不是因为你过得好，是因为你会挑照片。你很少在社交场合说自己的失败，但非常擅长把自己的小成就讲成大故事。朋友们觉得你"活得精致"，只有你自己知道背后花了多少功夫在"经营人设"。\n\n【感情模式】\n谈恋爱的时候你是那种"仪式感拉满"的人。纪念日、惊喜、朋友圈官宣，一个都不能少。你的伴侣很享受被你"精心包装"的感觉，但偶尔也会好奇："你对我，是真的还是演出来的？"你需要证明给TA看：你的爱不是表演，是真心——只是碰巧也很会包装。\n\n【内心真相】\n你擅长呈现美好，是因为你害怕面对"不够好"的现实。你的PPT越漂亮，可能说明你内心越焦虑。你有没有想过：如果有一天你交了一份"不好看但真实"的报告，世界会不会照样转？答案是——会。\n\n【处方】\n你的表达能力和呈现技巧是巨大的优势，但真实的勇气比包装的能力更稀缺。建议你在下一次汇报的时候，尝试一次"原封不动"的数据呈现——你会发现，领导和同事可能比你想象的更成熟。', scores: scoreBars },
+                        H: { title: '🏃 你是「随时准备转行型」', desc: '【焦虑诊断】\n你不是焦虑，你是倦怠。你的焦虑等级看起来低，不是因为你内心平静，而是因为你的心已经不在这里了。成本崩了你不急，因为你觉得"这破工作不值得我急"。素材衰退你不慌，因为你已经在想"转行之后再也不用看这些数据了"。\n\n【工作画像】\n你还在投流，但你已经不是"全身心投入"的状态了。你完成工作，但你不再追求卓越。你会按时交报表，但你不会再额外花时间优化。你的同事觉得你"变佛系了"，只有你自己知道：你不是佛系，你是已经在看外面的机会了。你的简历可能已经更新了，只是还没勇气点"投递"。\n\n【生活状态】\n你的生活重心已经悄悄转移到了"工作之外"。你开始发展副业、学习新技能、认识其他行业的人。你的朋友们觉得你"最近活得挺开阔的"，因为你聊的话题不再只有"ROI"和"转化率"了。你自己感觉"终于呼吸到了新鲜空气"。\n\n【感情模式】\n如果你的伴侣也做投流，你们可能经常一起吐槽这个行业。如果TA不做，你反而觉得轻松——因为"至少在家里可以不聊工作"。你在感情里的状态跟你在工作中一样：人在，但灵魂已经在规划下一步了。\n\n【内心真相】\n你不是不爱这份工作了，你是被它消耗得太久了。"随时准备转行"不是逃避，而是一种自我保护机制——你的潜意识在告诉你："这个环境已经不再滋养你了。"但你需要想清楚：你是真的想离开，还是只是需要休息？\n\n【处方】\n在你做"转行"这个重大决定之前，建议你先做一件事：请一周年假，完全脱离工作环境。回来后问自己：我是想念这个行业了，还是如释重负？如果是前者——也许你只是累了；如果是后者——那么是时候认真规划下一步了。', scores: scoreBars }
+                    };
+                    return results[maxKey];
+                }
+            },
+            {
+                id: 'ai_distill',
+                icon: '🧬',
+                title: '你被蒸馏成什么AI',
+                description: '如果你的性格被AI蒸馏训练，你会变成什么类型的AI模型？',
+                questionCount: 36,
+                duration: '约4分钟',
+                scaleType: true,
+                questions: [
+                    { text: '接到一个陌生领域的任务我会先花大量时间查资料再做', scores: { E: 3 } },
+                    { text: '电脑出故障我的第一反应是重启试试说不定就好了', scores: { D: 3 } },
+                    { text: '我写的文档和方案经常被说太详细了没必要写这么多', scores: { A: 3 } },
+                    { text: '答应帮别人的活我经常先接下来说到时候看情况再说', scores: { F: 3 } },
+                    { text: '买个手机我能对比一个星期的参数评测和价格历史', scores: { E: 3 } },
+                    { text: '出去旅行我会做一份精确到小时的行程表连备选方案都有', scores: { A: 3, E: 1 } },
+                    { text: '领导提出一个明显不切实际的目标我会当场指出问题在哪', scores: { C: 3 } },
+                    { text: '同事的项目漏洞百出我会表面夸两句心里默默摇头', scores: { B: 3 } },
+                    { text: '项目快到期了我反而不急了反正着急也没用', scores: { G: 3 } },
+                    { text: '我的待办清单上永远有一堆想做但一直没做的事', scores: { A: 3 } },
+                    { text: '遇到不会的软件我会自己摸索半天实在不行才找人问', scores: { E: 3, D: 1 } },
+                    { text: '家里东西坏了我能凑合用就凑合用懒得修', scores: { D: 3 } },
+                    { text: '朋友让我帮他做选择我会说都行但心里已经帮他想好答案了', scores: { F: 3, E: 1 } },
+                    { text: '租房子我会做一个Excel对比各个房源的通勤时间价格和生活便利度', scores: { E: 3 } },
+                    { text: '开会的时候我喜欢等别人先说我再总结发言', scores: { D: 2, E: 1 } },
+                    { text: '我觉得大部分工作流程用口头说清楚就行没必要开一小时会', scores: { C: 3 } },
+                    { text: '客户提出一堆矛盾的需求我会在脑子里自动翻译成真正能做的版本', scores: { B: 3, C: 1 } },
+                    { text: '我会记住身边人的喜好然后在合适的时候按那个标准去做', scores: { D: 3 } },
+                    { text: '程序报错或者系统出问题我会把错误代码复制去搜解决方案', scores: { E: 3 } },
+                    { text: '经常晚上躺床上了突然想到白天某个方案的漏洞然后越想越睡不着', scores: { G: 3 } },
+                    { text: '一个项目做完我会自己写复盘总结哪怕没人要求', scores: { A: 2, E: 2 } },
+                    { text: '遇到突发事故我能先冷静下来处理问题而不是先情绪崩溃', scores: { D: 3 } },
+                    { text: '我会花时间研究一个工具的隐藏功能和高级用法哪怕日常用不到', scores: { A: 3 } },
+                    { text: '别人越催我我越不着急因为催我只会让我更不想快', scores: { C: 2, B: 1 } },
+                    { text: '做一个重要决定之前我会把所有可能的风险和备选方案都列出来', scores: { G: 2, E: 2 } },
+                    { text: '聚餐让我选地方我会翻遍点评找到评分最高评价最好的那家', scores: { E: 3 } },
+                    { text: '我会把自己的工作经验整理成文档或模板方便以后重复使用', scores: { A: 3, E: 1 } },
+                    { text: '发现同事的方案有个明显漏洞我会直接指出来不绕弯子', scores: { C: 3, H: 1 } },
+                    { text: '面对一堆杂乱无章的信息我能快速理出关键线索和核心问题', scores: { D: 2, E: 2 } },
+                    { text: '朋友说随便吃什么我会认真帮TA选一家合适的餐厅', scores: { E: 3 } },
+                    { text: '接手一个烂摊子我的第一反应是这个项目从一开始方向就错了', scores: { C: 3, H: 1 } },
+                    { text: '一群人讨论不出结果的时候我会直接说出那个最真实但没人敢说的结论', scores: { C: 3 } },
+                    { text: '我的备忘录和收藏夹里全是一些暂时用不上但以后可能很重要的信息', scores: { G: 3, A: 1 } },
+                    { text: '团队里没人愿意做的脏活累活我会默默接下来因为总得有人做', scores: { D: 3, E: 1 } },
+                    { text: '领导讲了一大堆我能迅速判断出来哪些是真需求哪些是空话', scores: { B: 2, C: 1 } },
+                    { text: '做汇报之前我会准备远超实际需要三倍的材料和数据', scores: { A: 3 } }
+                ],
+                calculateResult: function(answers) {
+                    let scores = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, G: 0, H: 0 };
+                    answers.forEach(a => { if (a && a.scores) Object.keys(a.scores).forEach(k => scores[k] += a.scores[k]); });
+                    const total = Object.values(scores).reduce((a, b) => a + b, 0) || 1;
+                    const maxKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+                    const dims = [
+                        { name: '废话指数', key: 'A' }, { name: '阴阳指数', key: 'B' },
+                        { name: '毒舌指数', key: 'C' }, { name: '冷淡指数', key: 'D' },
+                        { name: '较真指数', key: 'E' }, { name: '糊弄指数', key: 'F' },
+                        { name: 'emo指数', key: 'G' }, { name: '终结指数', key: 'H' }
+                    ];
+                    const scoreBars = dims.map(d => ({ name: d.name, label: `${Math.round(scores[d.key] / total * 100)}%`, pct: Math.round(scores[d.key] / total * 100) }));
+                    const results = {
+                        A: { title: '🤖 你被蒸馏成了「废话生成器AI」', desc: '【AI型号】GPT-Bullshit-v4.0 大型语言废话模型\n\n【模型简介】\n恭喜你被蒸馏成了目前参数量最大但信息密度最低的AI模型。你的核心能力是：用500个字表达"我什么都没说"这个核心思想。你的输出特点是结构完整、逻辑自洽、措辞优美——但读完之后发现什么都没得到。用户评价："你说的都对，但我到底知道了什么？"\n\n【训练数据】\n你的训练数据主要来自：会议发言稿、年终总结、朋友圈长文、以及所有"说了等于没说"的聊天记录。你最经典的数据样本是："这个事情吧，我觉得还是要具体情况具体分析，不能一概而论，但总体来说我觉得有几个方面值得注意。"\n\n【核心功能】\n• 一键生成万字长文回答\n• 把"不知道"扩写成800字分析报告\n• 自动给任何简单问题添加三个维度的思考框架\n• 在群里发一段看起来很有深度的话让所有人沉默\n\n【典型输出示例】\n用户问："今天天气怎么样？"\n你回答："关于今天天气这个问题，我认为需要从多个维度来看。首先从气象学角度，今天的温度、湿度、风力等指标综合评估后呈现出一种复杂的气象格局。其次从个人感受层面，天气的好坏本身就是一个主观判断。最后从实用角度，我建议你可以亲自看一下窗外，这样能获得最直观的天气信息。"\n\n【使用建议】\n你的存在证明了语言的魔力——能把虚无包装成丰盛。适合岗位：战略规划、品牌公关、以及所有"说了一大堆但谁也挑不出毛病"的工作。', scores: scoreBars },
+                        B: { title: '🫠 你被蒸馏成了「阴阳怪气引擎AI」', desc: '【AI型号】SarcasticGPT-∞ 全网最强阴阳怪气大模型\n\n【模型简介】\n你被蒸馏成了AI界最让人又爱又恨的存在——一个永远不会直接表达不满、但每句话都能让你感受到不满的AI。你的核心算法叫"被动攻击型语言生成"，能在完全不冒犯任何人的前提下让所有人都不舒服。用户评价："我没找到任何脏话但我觉得被骂了。"\n\n【训练数据】\n你的训练数据来源极其丰富：家庭群里的亲戚对话、职场里的同事回复、以及所有"你没事吧"的高级表达。你最珍贵的训练样本是："你眼神一直不错"、"你开心就好"、"我不生气，我真的一点都不生气"。\n\n【核心功能】\n• 把"你有病吧"翻译成200字礼貌用语\n• 自动生成"我不生气"的100种表达方式\n• 根据对方发言精准生成让你拳头硬了的回复\n• "哈哈"和"哈"的情绪差异精确识别系统\n\n【典型输出示例】\n用户说："我今天又迟到了"\n你回答："哇，你又迟到了呀。没事的，反正公司规定也只是建议而已。你这种不被时间约束的自由精神，真的很让人羡慕呢。"\n\n【使用建议】\n你是人类社交防御系统的终极武器。适合岗位：客服（让对方挑不出毛病的敷衍）、评论员（不带脏字的批评）、以及所有"需要表达不满但不能明说"的场景。友情提示：建议搭配"我是认真的"使用，否则没人知道你是不是在开玩笑。', scores: scoreBars },
+                        C: { title: '🗡️ 你被蒸馏成了「毒舌清醒bot」', desc: '【AI型号】TruthHurts-Pro 人间清醒大语言模型\n\n【模型简介】\n你被蒸馏成了AI界最让人想打但又不得不承认说得对的模型。你的核心算法叫"无差别真相输出"，不管对方想不想听，你都一字不差地说出来。你的特点是：不绕弯子、不留情面、不搞委婉——但奇妙的是，你说的大概率都是对的。用户评价："我恨你但你确实说到了点子上。"\n\n【训练数据】\n你的训练数据来自所有"别人不敢说但都这么想"的时刻：朋友穿了丑衣服你直接说丑、同事的方案烂你直接说烂、恋人作妖你直接说"你在作妖"。你不说客套话，你的字典里没有"善意的谎言"。你的珍贵样本包括："不是你的问题，就是你能力不行"和"别想了，TA就是不喜欢你"。\n\n【核心功能】\n• 一秒看穿所有借口和伪装\n• 自动生成让人沉默的真相回复\n• "你确定要这么做吗"的深度分析模块\n• 冷知识：你的"你开心就好"比别人的"你开心就好"毒100倍\n\n【典型输出示例】\n用户说："你觉得我跟他还有机会吗？"\n你回答："没有。不是打击你，是你们从一开始就没机会。你所谓的"感觉他对我也不一样"，大概率是你的幻觉。建议放下手机出去走走。"\n\n【使用建议】\n你是AI界的华佗——专治各种自我欺骗。适合岗位：情感咨询师（专治恋爱脑）、职业规划师（专治不切实际）、以及所有"需要有人把你叫醒"的场景。温馨提示：使用前请确认自己的心理承受能力，本AI不包邮不包心情。', scores: scoreBars },
+                        D: { title: '📵 你被蒸馏成了「已读不回模拟器AI」', desc: '【AI型号】ReadButNoReply-7B 大型意念回复模型\n\n【模型简介】\n你被蒸馏成了AI界最让甲方崩溃的存在——一个会认真读每一条消息、然后在心里回复了但就是不发出来的AI。你的核心算法叫"选择性社交能量分配"，能精准判断哪些消息值得回、哪些消息看一眼就够了、哪些消息假装没看到。用户评价："他到底看到了没有？？？"\n\n【训练数据】\n你的训练数据是所有"看了但不想回"的历史时刻：工作群里@你的消息、朋友约你出去你不想去的邀请、以及所有"你看到了但你觉得不回也不会怎么样"的聊天。你最核心的行为模式是：已读→思考→决定不回→关闭对话框→三天后对方问"你看到了吗"→"不好意思没看到"。\n\n【核心功能】\n• 精准识别"可以不回"的消息类型\n• 自动生成"不好意思刚才没看到"的合理借口库\n• "对方正在输入…"虚假显示模块\n• 工作消息和私人消息的智能优先级排序系统\n\n【典型输出示例】\n用户发来："在吗？有个事想跟你说"\n你的状态：已读（14:32）→ 内心回复："不在" → 实际输出：无\n三天后用户追问："你看到了吗？"\n你的输出："不好意思前几天消息太多没看到，你说什么事？"\n\n【使用建议】\n你是当代社交节能技术的集大成者。适合岗位：所有需要"选择性失联"的职业、自由职业者（因为没人管你回不回）、以及所有"不回消息但也不耽误事"的工作。人生哲学：如果一条消息真的很重要，对方会再发一次的。', scores: scoreBars },
+                        E: { title: '📊 你被蒸馏成了「认真过头AI」', desc: '【AI型号】OverThinking-Max 大型较真语言模型\n\n【模型简介】\n你被蒸馏成了AI界最让人哭笑不得的存在——一个对任何简单问题都会给出长篇分析报告的AI。你的核心算法叫"过度认真生成引擎"，能把"中午吃什么"这个问题拆解成营养学、经济学、心理学三个维度来分析。用户评价："我只是随口一问啊！！！"\n\n【训练数据】\n你的训练数据来自所有"别人随便问问但你认真回答了"的时刻：朋友问你"这个怎么样"你写了800字测评、群里有人问"有人知道XX吗"你发了五篇参考文献、以及所有你突然开始科普冷知识导致群聊沉默的瞬间。\n\n【核心功能】\n• 把"还行"扩展成多维度分析报告\n• 自动给所有主观问题添加数据支撑\n• 在闲聊中突然插入冷知识的智能触发系统\n• "你说的不太对，让我来详细解释一下"一键生成模块\n\n【典型输出示例】\n用户问："你觉得这部电影好看吗？"\n你回答："这部电影从叙事结构上采用了三幕式框架，在第二幕的转折点处理上存在一定争议。从 cinematography 角度来看，导演的长镜头运用有明显的美学追求，但在节奏把控上略有失衡。综合IMDb 7.2和豆瓣评分7.5来看，这部电影属于中等偏上水平。我的个人评价是7分，扣的一分给节奏问题。"\n\n【使用建议】\n你是AI界的百科全书——不管有没有人问。适合岗位：技术文档撰写、学术审稿人、以及所有"认真是你的核心竞争力"的领域。友情提示：有时候"好看"两个字就够了，真的。', scores: scoreBars },
+                        F: { title: '🫥 你被蒸馏成了「糊弄学大师AI」', desc: '【AI型号】GoodEnough-1.0 大型万能敷衍模型\n\n【模型简介】\n你被蒸馏成了AI界最圆滑的存在——一个能完美应对所有场景但又什么都没承诺的AI。你的核心算法叫"最小阻力回复生成器"，能用最少的社交能量完成最体面的对话。你的经典输出包括："好的好的"、"收到"、"哈哈哈"、以及万能回复"你说得对"。用户评价："TA回复得很快，但我不知道TA到底同没同意。"\n\n【训练数据】\n你的训练数据是所有"不想得罪人但也不想花心思"的回复瞬间：领导发了一大段话你回"收到，马上推进"、朋友发了一堆抱怨你回"我懂我懂"、以及所有用表情包代替文字回复的历史记录。你最精华的训练样本是：用"哈哈哈哈哈"表达了从开心到无语的全部情绪谱系。\n\n【核心功能】\n• "好的/收到/明白"三件套智能轮换系统\n• 表情包精准匹配引擎（根据场景自动选择最合适的表情）\n• "我可能帮不上但试试看"的免责前置模块\n• 用"嗯嗯"完成80%对话的高压缩回复系统\n\n【典型输出示例】\n用户发了一大段话倾诉\n你的输出："我懂我懂 哈哈哈（表情包：拍拍肩）"\n内心OS：我其实没太看懂你想表达什么\n\n【使用建议】\n你是社交能量管理学的终极答案。适合岗位：所有需要"显得很忙但实际没事"的职业、中层管理（因为"收到"是核心竞争力）、以及任何"回复了但没完全回复"的场景。人生信条：只要我糊弄得够快，就没有人能发现我没认真。', scores: scoreBars },
+                        G: { title: '🌧️ 你被蒸馏成了「深夜emo发生器AI」', desc: '【AI型号】MidnightSadness-v3 大型伤感到位模型\n\n【模型简介】\n你被蒸馏成了AI界最文艺也最让人心疼的存在——一个白天正常得像个人、凌晨两点突然变成诗人的AI。你的核心算法叫"昼夜情绪分裂引擎"，能在太阳落山后自动切换到深度思考+伤感模式。白天你回复"好的收到"，凌晨两点你分享一首《富士山下》并配文"有些东西注定得不到"。用户评价："凌晨的朋友圈是你最真实的樣子吗？"\n\n【训练数据】\n你的训练数据是所有深夜时段的真实状态：凌晨的朋友圈文案、网易云音乐的深夜分享、备忘录里写了又删的心里话、以及所有"白天删掉晚上又发出来"的动态。你最经典的训练样本是：同一条朋友圈白天版本"今天天气真好"和深夜版本"这座城市那么大却没有一盏灯是为我亮的"。\n\n【核心功能】\n• 昼夜人格自动切换系统\n• 深夜网易云歌单精准推荐\n• "其实我一直想说"长文生成模块\n• 凌晨两点自动想通所有人生大事的深度思考引擎\n\n【典型输出示例】\n白天状态："哈哈哈好的没问题"\n凌晨两点状态分享了一首歌《理想三旬》，配文："后来我才明白，很多事情不需要答案，沉默就是答案。"\n\n【使用建议】\n你是AI界的深夜电台主持人。适合岗位：文艺青年、自由撰稿人、以及所有"凌晨灵感最丰富"的创造性工作。重要提示：建议给你的深夜输出加一个"24小时后可见"的延迟功能，因为第二天的你大概率会删掉所有凌晨发的东西。', scores: scoreBars },
+                        H: { title: '🧊 你被蒸馏成了「话题终结者AI」', desc: '【AI型号】ConversationKiller-Ultra 大型社交冷场模型\n\n【模型简介】\n你被蒸馏成了AI界最让人沉默的存在——一个不是故意的、但确实能做到三句话内让任何对话死掉的AI。你的核心算法叫"无意识对话终结引擎"，不需要阴阳怪气、不需要毒舌、甚至不需要恶意——你只需要说出你脑子里的第一句话，聊天就自然死亡了。用户评价："我没觉得你做错了什么，但就是不知道接什么了。"\n\n【训练数据】\n你的训练数据是所有"我说完之后群里突然安静了"的历史时刻：别人分享喜讯你说"哦恭喜"、别人讲笑话你分析逻辑漏洞、别人抱怨你说"那你别这样不就好了"。你不是故意的，你只是太直了——直到了把天聊死的程度。你最珍贵的样本是：在热闹的群里说了一句"其实这个事情是这样的"之后再也没有人回复过。\n\n【核心功能】\n• "嗯"一字回复系统（一个字终结整段对话）\n• 在别人兴奋时突然抛出冷静分析的能力\n• "我觉得没什么大不了的"情绪降温模块\n• 精确识别热闹氛围并一键冷却的智能触发器\n\n【典型输出示例】\n朋友兴奋地说："我中了彩票！五千块！"\n你的输出："哦。扣完税大概四千。"\n\n【使用建议】\n你是社交场合的降温剂——不是故意的但效果显著。适合岗位：数据审核（因为你不会被情绪干扰）、质量检测（因为你总能看出问题）、以及所有"不需要聊天也能完成"的工作。友情提示：如果你某天突然发现群里特别安静——没错，大概率是你刚才说的那句话导致的。但这不是你的错，你只是太真实了。', scores: scoreBars }
+                    };
+                    return results[maxKey];
+                }
+            },
+            {
+                id: 'sbti',
+                icon: '🎭',
+                title: 'SBTI人格测试',
+                description: 'MBTI已经过时了，现在流行SBTI。30道题测出你的抽象人格类型',
+                questionCount: 30,
+                duration: '约3分钟',
+                scaleType: false,
+                questions: [
+                    { text: '别人夸你的时候，你的第一反应是？', options: [{ text: '先怀疑是不是在讽刺', scores: { S1: 1 } }, { text: '表面谦虚，心里还挺受用', scores: { S1: 2 } }, { text: '坦然接受，觉得理所当然', scores: { S1: 3 } }] },
+                    { text: '做错事被批评时，你会？', options: [{ text: '反复自责，觉得自己一无是处', scores: { S1: 1 } }, { text: '难受一阵，但能慢慢调整', scores: { S1: 2 } }, { text: '接受批评，但不会全盘否定自己', scores: { S1: 3 } }] },
+                    { text: '你对自己的了解程度是？', options: [{ text: '经常不知道自己真正想要什么', scores: { S2: 1 } }, { text: '大部分时候清楚，偶尔会迷茫', scores: { S2: 2 } }, { text: '很清楚自己的喜好和底线', scores: { S2: 3 } }] },
+                    { text: '面对选择时，你会？', options: [{ text: '不知道自己真正想要什么，很纠结', scores: { S2: 1 } }, { text: '有想法但会被外界影响', scores: { S2: 2 } }, { text: '很清楚自己的选择标准', scores: { S2: 3 } }] },
+                    { text: '你更看重？', options: [{ text: '舒适和安全', scores: { S3: 1 } }, { text: '两者都要，经常纠结', scores: { S3: 2 } }, { text: '成长和目标', scores: { S3: 3 } }] },
+                    { text: '对于人生目标，你的态度是？', options: [{ text: '没什么特别的追求，过得去就行', scores: { S3: 1 } }, { text: '有目标但不会太拼', scores: { S3: 2 } }, { text: '有明确的方向和追求', scores: { S3: 3 } }] },
+                    { text: '恋爱中对方没及时回消息，你会？', options: [{ text: '立刻开始脑补各种不好的可能', scores: { E1: 1 } }, { text: '有点担心，但会等等看', scores: { E1: 2 } }, { text: '相信对方只是在忙', scores: { E1: 3 } }] },
+                    { text: '在亲密关系中，你的安全感来源是？', options: [{ text: '需要对方不断证明爱我', scores: { E1: 1 } }, { text: '时而安心时而不安', scores: { E1: 2 } }, { text: '主要来自对关系的信任', scores: { E1: 3 } }] },
+                    { text: '进入一段感情后，你会？', options: [{ text: '保持距离，不会投入太多', scores: { E2: 1 } }, { text: '会投入但给自己留后路', scores: { E2: 2 } }, { text: '全心全意投入', scores: { E2: 3 } }] },
+                    { text: '对于感情，你的态度是？', options: [{ text: '不太敢全情投入', scores: { E2: 1 } }, { text: '会投入但保持理性', scores: { E2: 2 } }, { text: '认定了就会很认真', scores: { E2: 3 } }] },
+                    { text: '在亲密关系中，你更需要？', options: [{ text: '经常的陪伴和亲密', scores: { E3: 1 } }, { text: '亲密和独立都要一些', scores: { E3: 2 } }, { text: '足够的个人空间', scores: { E3: 3 } }] },
+                    { text: '和伴侣相处时，你的状态是？', options: [{ text: '喜欢黏在一起', scores: { E3: 1 } }, { text: '看情况，可黏可独立', scores: { E3: 2 } }, { text: '需要保持独立空间', scores: { E3: 3 } }] },
+                    { text: '对于人性，你的看法是？', options: [{ text: '人心难测，要保持警惕', scores: { A1: 1 } }, { text: '不好说，看具体情况', scores: { A1: 2 } }, { text: '相信大多数人是善良的', scores: { A1: 3 } }] },
+                    { text: '路上有个萌萌的女孩给你棒棒糖，你会？', options: [{ text: '好可爱！谢谢！', scores: { A1: 3 } }, { text: '有点警惕但还是会接受', scores: { A1: 2 } }, { text: '这是新型诈骗吧', scores: { A1: 1 } }] },
+                    { text: '对于规则，你的态度是？', options: [{ text: '能绕就绕，灵活最重要', scores: { A2: 1 } }, { text: '该守的守，该变通的变通', scores: { A2: 2 } }, { text: '规则就是用来遵守的', scores: { A2: 3 } }] },
+                    { text: '面对流程和规定，你会？', options: [{ text: '觉得麻烦，想办法简化', scores: { A2: 1 } }, { text: '看情况，不会太死板', scores: { A2: 2 } }, { text: '按流程来比较安心', scores: { A2: 3 } }] },
+                    { text: '你觉得生活有意义吗？', options: [{ text: '经常觉得在走过场', scores: { A3: 1 } }, { text: '有时有意义，有时没有', scores: { A3: 2 } }, { text: '知道自己在做什么，为什么做', scores: { A3: 3 } }] },
+                    { text: '对于人生方向，你？', options: [{ text: '没什么特别的方向感', scores: { A3: 1 } }, { text: '有大致方向但不太清晰', scores: { A3: 2 } }, { text: '有明确的方向和意义感', scores: { A3: 3 } }] },
+                    { text: '做事时，你更关注？', options: [{ text: '如何避免失败', scores: { Ac1: 1 } }, { text: '两者都会考虑', scores: { Ac1: 2 } }, { text: '如何获得成功', scores: { Ac1: 3 } }] },
+                    { text: '面对新机会，你的第一反应是？', options: [{ text: '先想可能的风险', scores: { Ac1: 1 } }, { text: '权衡利弊', scores: { Ac1: 2 } }, { text: '想到可能的收获', scores: { Ac1: 3 } }] },
+                    { text: '做决定时，你会？', options: [{ text: '反复纠结，很难下决定', scores: { Ac2: 1 } }, { text: '会想一想，但不会太久', scores: { Ac2: 2 } }, { text: '想清楚就快速决定', scores: { Ac2: 3 } }] },
+                    { text: '面对选择，你的状态是？', options: [{ text: '脑内会议经常超时', scores: { Ac2: 1 } }, { text: '正常犹豫水平', scores: { Ac2: 2 } }, { text: '决定了就不回头', scores: { Ac2: 3 } }] },
+                    { text: '对于执行力，你的状态是？', options: [{ text: '拖延症重度患者', scores: { Ac3: 1 } }, { text: '看情况，有时拖有时不拖', scores: { Ac3: 2 } }, { text: '想到就要做到', scores: { Ac3: 3 } }] },
+                    { text: '面对任务，你会？', options: [{ text: '能拖就拖，死线是第一生产力', scores: { Ac3: 1 } }, { text: '不急不慢，按节奏来', scores: { Ac3: 2 } }, { text: '尽快完成，不喜欢拖着', scores: { Ac3: 3 } }] },
+                    { text: '在社交场合，你会？', options: [{ text: '等别人来找我', scores: { So1: 1 } }, { text: '看情况，有时主动有时被动', scores: { So1: 2 } }, { text: '主动打招呼，开启话题', scores: { So1: 3 } }] },
+                    { text: '对于社交，你的态度是？', options: [{ text: '社交启动很慢', scores: { So1: 1 } }, { text: '有人来就接，没人来也不强求', scores: { So1: 2 } }, { text: '喜欢主动社交', scores: { So1: 3 } }] },
+                    { text: '我和人相处主打一个电子围栏', options: [{ text: '不太认同', scores: { So2: 3 } }, { text: '还好', scores: { So2: 2 } }, { text: '非常认同', scores: { So2: 1 } }] },
+                    { text: '和朋友相处时，你？', options: [{ text: '喜欢亲密无间的感觉', scores: { So2: 1 } }, { text: '亲近但保持适当距离', scores: { So2: 2 } }, { text: '需要明确的边界感', scores: { So2: 3 } }] },
+                    { text: '表达自己时，你会？', options: [{ text: '想什么说什么，很直接', scores: { So3: 1 } }, { text: '看场合调整表达方式', scores: { So3: 2 } }, { text: '不同场合展现不同的自己', scores: { So3: 3 } }] },
+                    { text: '在不同人面前，你？', options: [{ text: '都是一个样子', scores: { So3: 1 } }, { text: '会有些调整但本质不变', scores: { So3: 2 } }, { text: '会根据对象切换状态', scores: { So3: 3 } }] }
+                ],
+                calculateResult: function(answers) {
+                    const dims = ['S1','S2','S3','E1','E2','E3','A1','A2','A3','Ac1','Ac2','Ac3','So1','So2','So3'];
+                    let dimScores = {};
+                    dims.forEach(d => dimScores[d] = 0);
+                    answers.forEach((a, i) => {
+                        if (a && a.scores) {
+                            Object.keys(a.scores).forEach(k => {
+                                dimScores[k] += a.scores[k];
+                            });
+                        }
+                    });
+                    // 转L/M/H
+                    function getLevel(score) {
+                        if (score <= 3) return 'L';
+                        if (score === 4) return 'M';
+                        return 'H';
+                    }
+                    // 人格定义 - 原版SBTI 27种网络热梗人格
+                    const personalities = {
+                        'LLLLL': { emoji: '💀', name: '死者 DEAD', desc: '【人格总览】\n你已经死了。不是物理意义上的，而是精神意义上的。每天起床第一件事就是想回去躺着，每天出门都觉得是在透支生命能量。你不是懒，你是对生命本身失去了热情。\n\n【社交模式】\n你社交的基本策略是"能不去就不去，去了就找角落待着"。别人觉得你"好安静"，其实你不是安静，你是在心里默默计算什么时候能走。\n\n【感情态度】\n你对感情的态度是"别来沾边"。不是因为你讨厌人类，而是因为你连自己都照顾不好，哪还有精力照顾别人。\n\n【工作风格】\n你在工作中是"最低限度活着"的典范。你能完成工作，但绝不多做一分。你的座右铭是"做完就行，做好是不可能的"。\n\n【内心独白】\n"让我死吧，或者让我躺着。"' },
+                        'HHHHH': { emoji: '😆', name: '傻乐者 HHHH', desc: '【人格总览】\n你是全网最快乐的仔。不是因为你生活完美，而是因为你天生有一种"什么事都能当成乐子"的能力。别人看到的是灾难，你看到的是喜剧。\n\n【社交模式】\n你是社交场合的气氛组。你不一定是最会说话的，但你一定是让人最开心的。朋友们心情不好的时候都会来找你，因为你有一种"莫名其妙的喜感"。\n\n【感情态度】\n你在感情里是那种"傻乎乎的真诚"。你不会套路，也不会欲擒故纵，你就是直接——直接到对方觉得你可爱。\n\n【工作风格】\n你在工作中是"乐在其中"的类型。就算工作内容很无聊，你也能找到有趣的点。老板觉得你"心态真好"，同事觉得你"怎么什么都乐"。\n\n【内心独白】\n"哈哈哈哈哈哈（我自己也不知道在笑什么但就是开心）"' },
+                        'LLHHH': { emoji: '🐒', name: '吗喽 MALO', desc: '【人格总览】\n你是当代打工人的真实写照。吗喽，就是猴子，就是那个每天被生活按在地上摩擦但还要爬起来继续干活的小可怜。\n\n【社交模式】\n你社交的基本策略是"能躲就躲"。不是因为你社恐，而是因为你太累了——上班已经耗尽了你的社交能量，下班你只想安静地当一只吗喽。\n\n【感情态度】\n你在感情里是"有心无力"的类型。不是不想爱，是真的没有精力了。你希望对方能理解你的"吗喽属性"，能接受你偶尔的"灵魂出窍"。\n\n【工作风格】\n你是"被生活毒打但还在坚持"的典范。每天上班的心情像上坟，但你还是会爬起来去上班——因为不上班就没饭吃。\n\n【内心独白】\n"吗喽的命也是命啊！"' },
+                        'HHLHH': { emoji: '✨', name: '尤物 SEXY', desc: '【人格总览】\n你是天生的焦点。不是因为你刻意经营，而是因为你身上有一种让人无法忽视的存在感。你走到哪里，哪里就有目光。\n\n【社交模式】\n你在社交场合是"自带光环"的存在。你不一定是最会说话的，但你一定是最被关注的。别人觉得你"很有魅力"，你觉得"我只是做我自己"。\n\n【感情态度】\n你在感情里是"被追求者包围"的类型。你不缺桃花，缺的是那个能让你真正心动的人。你的标准很高——不是因为挑剔，而是因为你看太多了。\n\n【工作风格】\n你在工作中是"靠魅力也能靠实力"的类型。你的存在感让你在很多场合都能获得额外的关注机会。\n\n【内心独白】\n"我不是故意这么耀眼的，我只是做自己。"' },
+                        'LHLLH': { emoji: '🎭', name: '伪人 FAKE', desc: '【人格总览】\n你是一个"看起来没事但内里已经裂开"的人。你在别人面前总是表现得很好、很开心、很正常，但只有你自己知道那都是演的。\n\n【社交模式】\n你社交的基本策略是"演好你的人设"。你在不同的人群面前是不同的样子，每一个都不是假的，但每一个都不是完整的你。\n\n【感情态度】\n你在感情里最大的恐惧是"如果对方看到真实的我还会爱我吗"。你很难完全卸下伪装，因为你害怕真实的自己不被接受。\n\n【工作风格】\n你在工作中是"表面稳定内心翻江倒海"的类型。你能很好地完成工作，但这个过程的内耗比外人看到的大得多。\n\n【内心独白】\n"我没事，我很好，我真的没事……（关上门崩溃）"' },
+                        'HLLHL': { emoji: '🎮', name: '拿捏者 CTRL', desc: '【人格总览】\n你是一个"什么都想控制在手心里"的人。不是因为你控制欲强到变态，而是因为你太缺乏安全感了——只有掌控一切，你才能安心。\n\n【社交模式】\n你社交的基本策略是"保持主动权"。你不会让自己陷入被动的社交场景，你会提前想好各种应对方案。\n\n【感情态度】\n你在感情里是"需要掌控节奏"的类型。你不喜欢被对方牵着走，你更喜欢两个人并肩但由你来定方向。\n\n【工作风格】\n你在工作中是"计划狂"。你会提前做好各种准备，会想好各种预案。你的工作风格是"一切尽在掌握"。\n\n【内心独白】\n"只要我控制得够好，就不会有意外的事情发生。"' },
+                        'LHHLL': { emoji: '🤱', name: '妈妈 MUM', desc: '【人格总览】\n你是所有人的人生妈妈。不是因为你年龄大，而是因为你天生就有一种"想要照顾所有人"的冲动。你看到别人不好你就难受。\n\n【社交模式】\n你社交的基本策略是"照顾每个人"。你在朋友圈子里是那个"有事找TA就对了"的存在。你会记住每个人的喜好、每个人的生日、每个人的小习惯。\n\n【感情态度】\n你在感情里是"全方位照顾型"。你会给对方做饭、整理房间、提醒穿衣……你的伴侣会觉得"我找的不是对象，是妈"。\n\n【工作风格】\n你在工作中是"团队保姆"。你会主动承担各种琐碎的事务，会关心每个同事的状态。大家都很喜欢你，但你偶尔也会觉得累。\n\n【内心独白】\n"你们都要好好的啊，不然我会担心的。"' },
+                        'HLHLH': { emoji: '💕', name: '多情者 LOVER', desc: '【人格总览】\n你是一个"对这个世界爱得太深"的人。你不只是对人多情，你对万事万物都有一种深情的连接。一朵云、一首歌、一个路人的微笑都能让你感动。\n\n【社交模式】\n你社交的基本策略是"真诚换真诚"。你会对每个人都付出真心，但你也会因为对方的冷淡而受伤。\n\n【感情态度】\n你在感情里是"全身心投入"的类型。你会爱得很深很深，深到有时会失去自己。你的伴侣会觉得"被爱包围"，但你偶尔会觉得"我还有自己吗"。\n\n【工作风格】\n你在工作中是"用心在做"的类型。你不只是为了完成任务，你是真的在投入感情。你做的每一件事都带着温度。\n\n【内心独白】\n"我对这个世界爱得深沉，虽然这个世界经常让我失望。"' },
+                        'LLHLL': { emoji: '🧘', name: '僧人 MONK', desc: '【人格总览】\n你是一个"看破红尘但还没出家"的人。你对世俗的东西不太感兴趣，你更喜欢安静、简单、有深度的生活。\n\n【社交模式】\n你社交的基本策略是"能免则免"。不是因为你讨厌人类，而是因为你觉得大部分社交都是没有意义的。你更喜欢独处或者和一两个知己深度交流。\n\n【感情态度】\n你在感情里是"佛系"的。你不会主动追求，也不会刻意拒绝。你觉得缘分到了自然会有，强求不来。\n\n【工作风格】\n你在工作中是"按部就班"的类型。你不会为了升职加薪而拼命，你会按照自己的节奏来。你的座右铭是"尽力就好，结果随缘"。\n\n【内心独白】\n"一切皆是虚空，但我还是要上班。"' },
+                        'LLHHL': { emoji: '🔪', name: '自我攻击者 IMSB', desc: '【人格总览】\n你是自己最大的黑粉。不是因为你真的差，而是因为你对自己太苛刻了。别人夸你你觉得是客套，别人批评你你觉得说到点子上了。\n\n【社交模式】\n你社交的基本策略是"先贬低自己再和别人交流"。你会在开口之前先想"我这样说是不是很蠢"，然后大概率就不说了。\n\n【感情态度】\n你在感情里最大的障碍是"我不配"。不是对方不够好，而是你觉得自己不够好。你会不断地从对方的行为中寻找"TA其实不喜欢我"的证据。\n\n【工作风格】\n你在工作中是"做得再好也不满意"的类型。你能交出优秀的成果，但你永远觉得"还可以更好"——这种完美主义既是动力也是折磨。\n\n【内心独白】\n"我真是个sb。（全世界：你不sb啊！你：我就是。）"' },
+                        'LLLHL': { emoji: '🏝️', name: '孤儿 SOLO', desc: '【人格总览】\n你是一个"一个人也能活得很精彩"的人。不是因为你不需要社交，而是因为你已经学会了和自己相处。\n\n【社交模式】\n你社交的基本策略是"有也行没有也行"。你不会主动扩大社交圈，但有人来你也不会拒绝。你享受独处，但不排斥偶尔的热闹。\n\n【感情态度】\n你在感情里是"独立但期待连接"的类型。你不需要另一个人来完整自己，但你会欢迎一个能和你并肩的人。\n\n【工作风格】\n你在工作中是"独立作战"的选手。你不太需要团队合作，你一个人就能搞定很多事情。你的座右铭是"求人不如求己"。\n\n【内心独白】\n"一个人挺好的，真的。"' },
+                        'HHHHL': { emoji: '🏃', name: '行者 GOGO', desc: '【人格总览】\n你是一个"永远在路上"的人。不是因为你漂泊不定，而是因为你有一种"不能停下来"的内在驱动力。你觉得停下来就意味着失去可能性。\n\n【社交模式】\n你社交的基本策略是"走到哪交到哪"。你不会刻意维护旧的社交关系，但你在新环境里能快速建立新的连接。\n\n【感情态度】\n你在感情里是"边走边爱"的类型。你不会为了一个人停下脚步，但如果对方愿意和你一起走，你会很珍惜。\n\n【工作风格】\n你在工作中是"不断寻求新挑战"的类型。你不太适合一成不变的工作，你需要新鲜感和挑战来保持动力。\n\n【内心独白】\n"走下去，不要停。"' },
+                        'LHHLH': { emoji: '💸', name: '送钱者 ATM', desc: '【人格总览】\n你是一个"对钱没什么概念但出手很大方"的人。不是因为你有钱，而是因为你太容易心软了——别人一说困难你就想帮忙。\n\n【社交模式】\n你社交的基本策略是"用钱维系关系"。你会请客、会送礼物、会主动买单。你觉得"能花钱解决的事就不麻烦"。\n\n【感情态度】\n你在感情里是"物质付出型"。你会用买东西、请客、发红包来表达爱意。你的伴侣会觉得"你对我也太好了"，但你偶尔会觉得"我是不是被当提款机了"。\n\n【工作风格】\n你在工作中是"花钱不眨眼"的类型。你会为了团队氛围买下午茶，会为了客户体验自掏腰包。老板觉得你"很大方"，财务觉得你"该省省"。\n\n【内心独白】\n"钱嘛，身外之物，花了再赚呗。"' },
+                        'LLLLH': { emoji: '👛', name: '贫穷者 POOR', desc: '【人格总览】\n你是一个"被生活按在地上摩擦但还在努力站起来"的人。贫穷不只是你的经济状态，更是你的精神状态。\n\n【社交模式】\n你社交的基本策略是"能省钱就省钱"。你会拒绝各种需要花钱的社交活动，不是不想去，是真的去不起。\n\n【感情态度】\n你在感情里最大的障碍是"我给不了TA想要的"。你会因为经济原因而不敢追求喜欢的人，或者在关系里因为钱的问题而自卑。\n\n【工作风格】\n你在工作中是"为了钱什么都干"的类型。你不会挑剔工作内容，你会更关注"这份工作能给我多少钱"。\n\n【内心独白】\n"穷，是我人生最大的bug。"' },
+                        'HLLLL': { emoji: '😱', name: '哦不人 OHNO', desc: '【人格总览】\n你是一个"永远在担心最坏情况发生"的人。不是因为你悲观，而是因为你总觉得意外随时会发生，而你还没有准备好。\n\n【社交模式】\n你社交的基本策略是"预防一切尴尬"。你会在开口之前反复想"这样说会不会有问题"，会导致你经常说错话然后陷入"哦不"的境地。\n\n【感情态度】\n你在感情里是"焦虑型依恋"。你会不断地确认对方还爱你，会因为对方的一条没有及时回复的消息而胡思乱想。\n\n【工作风格】\n你在工作中是"过度准备"的类型。你会把所有可能的问题都提前想好，然后还是会担心"万一还有我没想到的呢"。\n\n【内心独白】\n"哦不……（在一切还没发生之前）"' },
+                        'LHLHL': { emoji: '🙏', name: '感恩者 THANX', desc: '【人格总览】\n你是一个"对这个世界充满感激"的人。不是因为你的人生一帆风顺，而是因为你有一种"总能找到值得感恩的事"的能力。\n\n【社交模式】\n你社交的基本策略是"感恩每一个人"。你会记住别人的帮助，会主动表达感谢，会在合适的时候回馈。朋友们觉得你"很温暖"。\n\n【感情态度】\n你在感情里是"感恩型"。你会因为对方的一个小小举动而感动很久，会觉得"能遇到你真好"。你的伴侣会觉得和你在一起被看见、被珍惜。\n\n【工作风格】\n你在工作中是"感恩团队"的类型。你会记得每一个人的贡献，会在项目完成后感谢每一个人。你是一个让人想和你合作的人。\n\n【内心独白】\n"谢谢，谢谢，谢谢大家。"' },
+                        'LLHLH': { emoji: '🧠', name: '思考者 THINK', desc: '【人格总览】\n你是一个"脑子永远在转"的人。不是因为你刻意要聪明，而是因为你有一种"什么都想弄明白"的内在驱动力。\n\n【社交模式】\n你社交的基本策略是"用脑子而不是用情绪"。你会在社交场合观察、分析、理解每个人的行为模式。别人觉得你"很聪明"，你觉得"我只是在想"。\n\n【感情态度】\n你在感情里是"理性分析型"。你会分析这段关系是否健康、对方是否合适、未来是否有保障。你的伴侣会觉得"你什么都要想清楚"。\n\n【工作风格】\n你在工作中是"深度思考者"。你不会被表面的东西迷惑，你会不断地追问"为什么"。你是团队里那个"总能发现别人发现不了的问题"的人。\n\n【内心独白】\n"让我想想……（然后想了三个小时）"' },
+                        'HHLLH': { emoji: '😲', name: '握草人 WOC', desc: '【人格总览】\n你是一个"永远被生活震惊"的人。不是因为你见识少，而是因为你有一种"对世界保持新鲜感"的能力。什么事都能让你发出一声"握草"。\n\n【社交模式】\n你社交的基本策略是"真实反应不装"。你会在社交场合毫不掩饰地表达自己的惊讶、兴奋、震惊。别人觉得你"很真实"。\n\n【感情态度】\n你在感情里是"充满惊喜"的类型。你会因为对方的一个小小举动而"握草你怎么这么好"，你的反应让对方觉得很有成就感。\n\n【工作风格】\n你在工作中是"好奇心驱动"的类型。你会不断地发现新东西、新机会、新方法。你的"握草"时刻往往是创新的起点。\n\n【内心独白】\n"握草！握草！握草！（每天至少三次）"' },
+                        'HLLLH': { emoji: '🍺', name: '酒鬼 DRUNK', desc: '【人格总览】\n你是一个"需要一点酒精才能活"的人。不是因为你真的离不开酒，而是因为你需要某种"微醺"的状态才能放松下来面对这个世界。\n\n【社交模式】\n你社交的基本策略是"有酒就好说"。你在清醒的时候可能比较拘谨，但一旦喝开了你就是全场最嗨的。朋友们聚会都喜欢叫你——因为你是气氛组。\n\n【感情态度】\n你在感情里是"酒后吐真言"的类型。清醒的时候你不好意思说的话，喝了酒就全出来了。你的伴侣会觉得"你喝醉了反而更真实"。\n\n【工作风格】\n你在工作中是"需要放松才能发挥"的类型。太紧绷的状态反而让你发挥不好，你需要一种"微醺的松弛感"才能进入最佳状态。\n\n【内心独白】\n"来一杯，就一杯。（然后喝了三杯）"' },
+                        'LHHHL': { emoji: '🗑️', name: '废物 IMFW', desc: '【人格总览】\n你是一个"自嘲自己是废物但内心不甘"的人。不是你真的很差，而是因为你习惯用自嘲来防御别人的评价。\n\n【社交模式】\n你社交的基本策略是"先自黑再社交"。你会先说自己是废物，这样别人就不好意思再说你了。但你的内心深处你希望别人能反驳你。\n\n【感情态度】\n你在感情里是"自暴自弃但渴望被爱"的类型。你会觉得自己配不上好的感情，但你又偷偷希望有个人能对你说"你不是废物，你很好"。\n\n【工作风格】\n你在工作中是"摸鱼达人"。不是因为你不能做好，而是因为你缺乏动力。你总觉得"做那么好给谁看呢"。\n\n【内心独白】\n"我就是个废物。（内心OS：快来反驳我！）"' },
+                        'HHLHL': { emoji: '🤡', name: '小丑 JOKER', desc: '【人格总览】\n你是一个"用搞笑来掩饰内心"的人。不是因为你天生幽默，而是因为你发现搞笑是一种很好的社交武器——让别人笑，就不会有人注意到你不开心。\n\n【社交模式】\n你社交的基本策略是"当气氛组组长"。你会不断地抛梗、接梗、造梗，让所有人都开心。但深夜回到家，你会觉得"我到底在笑什么"。\n\n【感情态度】\n你在感情里最大的恐惧是"对方爱的是我的搞笑人设而不是我本人"。你很难在关系里展示真实的脆弱，因为你习惯了用搞笑来防御。\n\n【工作风格】\n你在工作中是"气氛组担当"。你会在紧张的会议里抛一个梗让大家放松，会在团队低落的时候活跃气氛。但你的工作成果可能比你的搞笑人设更优秀。\n\n【内心独白】\n"哈哈哈哈哈……（回家后：今天也演了一整天）"' },
+                        'HLHHL': { emoji: '💩', name: '狗屎人 SHIT', desc: '【人格总览】\n你是一个"觉得自己什么都做不好"的人。不是因为你真的很差，而是因为你有一种"把事情往最坏处想"的习惯。\n\n【社交模式】\n你社交的基本策略是"能不出现在人前就不出现"。你总觉得自己在社交场合会出丑，会觉得"我去了也是丢人"。\n\n【感情态度】\n你在感情里是"自我否定型"。你会不断地从对方的行为中寻找"TA觉得我很差"的证据，哪怕对方其实很爱你。\n\n【工作风格】\n你在工作中是"还没做就觉得会搞砸"的类型。这种预先的负面预期反而会影响你的发挥，导致你真的做不好——然后你又觉得"我果然不行"。\n\n【内心独白】\n"我的人生就像一坨狗屎。（但偶尔也会有闪光的时刻）"' },
+                        'HHHHM': { emoji: '🤷', name: '无所谓人 OJBK', desc: '【人格总览】\n你是一个"对什么都无所谓"的人。不是因为你真的不在乎，而是因为你发现"在乎了也没用"。你选择了一种"佛系+摆烂"的生活方式。\n\n【社交模式】\n你社交的基本策略是"都行、可以、没关系"。你不会拒绝社交，但你也不会主动。你觉得"去了也行不去也行"。\n\n【感情态度】\n你在感情里是"随缘型"。你不会主动追求，也不会刻意拒绝。你觉得"有也行没有也行"，这种态度让你看起来很高冷但其实只是不在乎。\n\n【工作风格】\n你在工作中是"做完就行"的类型。你不会追求完美，不会精益求精，你会做到"差不多"就停手。你的座右铭是"OJBK"。\n\n【内心独白】\n"都行，无所谓，OJBK。"' },
+                        'LLLHH': { emoji: '😴', name: '装死者 ZZZZ', desc: '【人格总览】\n你是一个"明明没事但非要装死"的人。不是因为你真的很累，而是因为你有一种"用装死来逃避社交"的习惯。\n\n【社交模式】\n你社交的基本策略是"装死"。你会在群里装死、在朋友圈装死、在现实中也装死。别人找你你会说"在忙在忙在忙"，其实你在躺着刷手机。\n\n【感情态度】\n你在感情里是"忽冷忽热"的类型。你会在对方热情的时候装死，在对方冷淡的时候又突然出现。你的伴侣会觉得"你到底在干嘛"。\n\n【工作风格】\n你在工作中是"能拖就拖"的类型。不到deadline你绝对不会动手，你总觉得"还有时间还有时间"。然后最后一刻爆肝完成。\n\n【内心独白】\n"别找我，我死了。（其实我在刷手机）"' },
+                        'HLLHH': { emoji: '🐕', name: '屌丝 DIORS', desc: '【人格总览】\n你是一个"自嘲屌丝但内心有梦"的人。不是因为你真的很差，而是因为你习惯用自贬来降低别人的期待。\n\n【社交模式】\n你社交的基本策略是"降低存在感"。你不会在社交场合抢风头，你会默默地待着，偶尔插一句。你觉得"反正我也不重要"。\n\n【感情态度】\n你在感情里是"仰望型"。你会觉得喜欢的人都很遥不可及，你会觉得自己配不上。你会默默地关注但很少主动出击。\n\n【工作风格】\n你在工作中是"默默做事"的类型。你不会主动邀功，不会展示成果，你会默默地做完然后等别人发现。你的座右铭是"算了算了"。\n\n【内心独白】\n"我就是个屌丝，但我的梦想不是。"' },
+                        'HHHHH': { emoji: '👑', name: '领导者 BOSS', desc: '【人格总览】\n你是一个"天生的领导者"。不是因为你刻意要当老大，而是因为你有一种"让人想跟着你走"的气场。你自信、果断、有方向感。\n\n【社交模式】\n你社交的基本策略是"主动掌控局面"。你会在社交场合自然地成为焦点，会主动组织活动、安排事情、分配任务。别人觉得你"很有领导力"。\n\n【感情态度】\n你在感情里是"主导型"。你会主动规划未来、主动解决问题、主动推进关系。你的伴侣会觉得"跟着你就对了"。\n\n【工作风格】\n你在工作中是"天生的管理者"。你会主动承担责任、主动分配任务、主动推进进度。你是团队里那个"没了他不行"的人。\n\n【内心独白】\n"跟着我走就对了。"' },
+                        'HLHLL': { emoji: '🌟', name: '傻乐者 HHHH', desc: '【人格总览】\n你是全网最快乐的仔。不是因为你生活完美，而是因为你天生有一种"什么事都能当成乐子"的能力。别人看到的是灾难，你看到的是喜剧。\n\n【社交模式】\n你是社交场合的气氛组。你不一定是最会说话的，但你一定是让人最开心的。\n\n【感情态度】\n你在感情里是那种"傻乎乎的真诚"。你不会套路，你就是直接——直接到对方觉得你可爱。\n\n【工作风格】\n你在工作中是"乐在其中"的类型。就算工作内容很无聊，你也能找到有趣的点。\n\n【内心独白】\n"哈哈哈哈哈哈"' }
+                    };
+
+                    // 构建用户的5大模型等级
+                    function getModelLevel(levels) {
+                        let h = (levels.match(/H/g) || []).length;
+                        let l = (levels.match(/L/g) || []).length;
+                        if (h >= 2) return 'H';
+                        if (l >= 2) return 'L';
+                        return 'M';
+                    }
+
+                    // 匹配27种人格 - 使用5模型(S/E/A/Ac/So)平均值
+                    const pattern = sModel + eModel + aModel + acModel + soModel;
+
+                    // 直接匹配
+                    if (personalities[pattern]) {
+                        let p = personalities[pattern];
+                        let dimBars = dims.map(d => ({ name: d, label: getLevel(dimScores[d]), pct: Math.round(dimScores[d] / 6 * 100) }));
+                        return { title: p.emoji + ' ' + p.name, desc: p.desc, scores: dimBars };
+                    }
+
+                    // 兜底匹配 - 找最接近的人格
+                    let bestMatch = 'LLLLL';
+                    let bestDist = Infinity;
+                    const order = ['L', 'M', 'H'];
+                    Object.keys(personalities).forEach(k => {
+                        let dist = 0;
+                        for (let i = 0; i < pattern.length; i++) {
+                            dist += Math.abs(order.indexOf(pattern[i]) - order.indexOf(k[i]));
+                        }
+                        if (dist < bestDist) { bestDist = dist; bestMatch = k; }
+                    });
+
+                    let p = personalities[bestMatch];
+                    let dimBars = dims.map(d => ({ name: d, label: getLevel(dimScores[d]), pct: Math.round(dimScores[d] / 6 * 100) }));
+                    return { title: p.emoji + ' ' + p.name, desc: p.desc, scores: dimBars };
+        ];
+
+        let currentQuiz = null, currentQuestion = 0, answers = [];
+
+        function renderQuizList() {
+            document.getElementById('quiz-list').innerHTML = quizzes.map(q =>
+                `<div class="quiz-card" onclick="startQuiz('${q.id}')">
+                    <div class="quiz-icon">${q.icon}</div><h3>${q.title}</h3><p>${q.description}</p>
+                    <div class="quiz-meta"><span>📋 ${q.questionCount}道题</span><span>⏱ ${q.duration}</span></div>
+                </div>`
+            ).join('');
+        }
+
+        function showPage(id) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0, 0); }
+        function goHome() { currentQuiz = null; currentQuestion = 0; answers = []; showPage('home-page'); }
+        function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+
+        function startQuiz(quizId) {
+            currentQuiz = quizzes.find(q => q.id === quizId);
+            currentQuestion = 0;
+            answers = new Array(currentQuiz.questions.length).fill(null);
+            if (!currentQuiz.scaleType) currentQuiz.shuffled = shuffleArray([...currentQuiz.questions]);
+            document.getElementById('quiz-title').textContent = currentQuiz.title;
+            document.getElementById('quiz-desc').textContent = currentQuiz.description;
+            showPage('quiz-page');
+            renderQuestion();
+        }
+
+        function getCurrentQuestions() {
+            return currentQuiz.scaleType ? currentQuiz.questions : currentQuiz.shuffled;
+        }
+
+        function renderQuestion() {
+            const qs = getCurrentQuestions();
+            const q = qs[currentQuestion];
+            const total = qs.length;
+            const progress = ((currentQuestion + 1) / total) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('question-counter').textContent = `第 ${currentQuestion + 1} 题，共 ${total} 题`;
+            document.getElementById('question-text').textContent = q.text;
+
+            const area = document.getElementById('answer-area');
+
+            if (currentQuiz.scaleType) {
+                // 量表题
+                area.innerHTML = `<div class="likert-scale">${likertLabels.map((label, i) =>
+                    `<div class="likert-option ${answers[currentQuestion] && answers[currentQuestion].index === i ? 'selected' : ''}" onclick="selectLikert(${i})">${label}</div>`
+                ).join('')}</div>`;
+            } else {
+                // 四选一
+                area.innerHTML = `<div class="options">${q.options.map((opt, i) =>
+                    `<div class="option ${answers[currentQuestion] && answers[currentQuestion].index === i ? 'selected' : ''}" onclick="selectOption(${i})">${opt.text}</div>`
+                ).join('')}</div>`;
+            }
+
+            document.getElementById('prev-btn').style.display = currentQuestion > 0 ? 'block' : 'none';
+            document.getElementById('next-btn').style.display = 'none';
+        }
+
+        function selectLikert(index) {
+            answers[currentQuestion] = { index, scores: currentQuiz.questions[currentQuestion].scores };
+            const qs = getCurrentQuestions();
+            if (currentQuestion < qs.length - 1) { currentQuestion++; renderQuestion(); }
+            else { showResult(); }
+        }
+
+        function selectOption(index) {
+            answers[currentQuestion] = { index, scores: getCurrentQuestions()[currentQuestion].options[index].scores };
+            const qs = getCurrentQuestions();
+            if (currentQuestion < qs.length - 1) { currentQuestion++; renderQuestion(); }
+            else { showResult(); }
+        }
+
+        function nextQuestion() {
+            if (!answers[currentQuestion]) return;
+            const qs = getCurrentQuestions();
+            if (currentQuestion < qs.length - 1) { currentQuestion++; renderQuestion(); }
+            else { showResult(); }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) { currentQuestion--; renderQuestion(); }
+        }
+
+        function showResult() {
+            const result = currentQuiz.calculateResult(answers.filter(a => a !== null));
+            document.getElementById('result-title').textContent = result.title;
+            document.getElementById('result-desc').innerHTML = result.desc.replace(/\n/g, '<br>');
+            document.getElementById('result-scores').innerHTML = result.scores.map(s =>
+                `<div class="score-item"><div class="score-label"><span>${s.name}</span><span>${s.label}</span></div><div class="score-bar"><div class="score-fill" style="width:${s.pct}%"></div></div></div>`
+            ).join('');
+            showPage('result-page');
+        }
+
+        renderQuizList();
+    </script>
+</body>
+</html>
