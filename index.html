@@ -486,6 +486,8 @@
                     let p = personalities[bestMatch];
                     let dimBars = dims.map(d => ({ name: d, label: getLevel(dimScores[d]), pct: Math.round(dimScores[d] / 6 * 100) }));
                     return { title: p.emoji + ' ' + p.name, desc: p.desc, scores: dimBars };
+                }
+            }
         ];
 
         let currentQuiz = null, currentQuestion = 0, answers = [];
