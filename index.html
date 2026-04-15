@@ -461,6 +461,14 @@
                         return 'M';
                     }
 
+                    // 计算5大模型的等级
+                    const dimValues = dims.map(d => getLevel(dimScores[d]));
+                    const sModel = getModelLevel(dimValues.slice(0, 3).join(''));
+                    const eModel = getModelLevel(dimValues.slice(3, 6).join(''));
+                    const aModel = getModelLevel(dimValues.slice(6, 9).join(''));
+                    const acModel = getModelLevel(dimValues.slice(9, 12).join(''));
+                    const soModel = getModelLevel(dimValues.slice(12, 15).join(''));
+
                     // 匹配27种人格 - 使用5模型(S/E/A/Ac/So)平均值
                     const pattern = sModel + eModel + aModel + acModel + soModel;
 
