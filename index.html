@@ -645,7 +645,13 @@
             currentQuiz = quizzes.find(q => q.id === quizId);
             currentQuestion = 0;
             answers = new Array(currentQuiz.questions.length).fill(null);
-            if (!currentQuiz.scaleType) currentQuiz.shuffled = shuffleArray([...currentQuiz.questions]);
+            if (!currentQuiz.scaleType) {
+                // 深拷贝题目并打乱顺序，同时打乱每个题目的选项
+                currentQuiz.shuffled = shuffleArray(currentQuiz.questions.map(q => ({
+                    ...q,
+                    options: shuffleArray([...q.options])
+                })));
+            }
             document.getElementById('quiz-title').textContent = currentQuiz.title;
             document.getElementById('quiz-desc').textContent = currentQuiz.description;
             showPage('quiz-page');
