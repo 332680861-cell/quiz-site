@@ -365,6 +365,114 @@
                 }
             },
             {
+                id: 'big-five',
+                icon: '🧬',
+                title: '大五人格模型测试',
+                description: '基于心理学OCEAN模型，测量你的开放性、尽责性、外向性、宜人性和神经质五个维度',
+                questionCount: 30,
+                duration: '约4分钟',
+                scaleType: true,
+                questions: [
+                    { text: '我经常尝试新的事物，对未知充满好奇', scores: { O: 3 } },
+                    { text: '我喜欢有计划和条理，做事前会先列清单', scores: { C: 3 } },
+                    { text: '在聚会中我通常是那个主动和大家聊天的人', scores: { E: 3 } },
+                    { text: '我很容易相信别人，觉得大部分人都是善良的', scores: { A: 3 } },
+                    { text: '我经常因为小事感到焦虑或紧张', scores: { N: 3 } },
+                    { text: '我享受讨论抽象概念和哲学问题', scores: { O: 3 } },
+                    { text: '我会按时完成承诺的事，从不食言', scores: { C: 3 } },
+                    { text: '我喜欢成为众人关注的焦点', scores: { E: 3 } },
+                    { text: '即使别人对我不太好，我也会保持礼貌和友善', scores: { A: 3 } },
+                    { text: '我的情绪变化比较快，容易从开心变成沮丧', scores: { N: 3 } },
+                    { text: '我喜欢听各种风格的音乐、看不同类型的电影', scores: { O: 3 } },
+                    { text: '我会把东西收拾得整整齐齐，保持环境整洁', scores: { C: 3 } },
+                    { text: '和陌生人打交道对我来说是一件很轻松的事', scores: { E: 3 } },
+                    { text: '比起争论输赢，我更在意大家的关系和谐', scores: { A: 3 } },
+                    { text: '我经常会在半夜想起一些让自己担心的事', scores: { N: 3 } },
+                    { text: '我喜欢想象如果活在古代或未来会是什么样子', scores: { O: 3 } },
+                    { text: '一旦设定了目标，我就会全力以赴直到完成', scores: { C: 3 } },
+                    { text: '一个人待久了我会觉得无聊，想找人说说话', scores: { E: 3 } },
+                    { text: '朋友伤心时我愿意花时间倾听，即使耽误自己的事', scores: { A: 3 } },
+                    { text: '面对压力时我很难保持冷静', scores: { N: 3 } },
+                    { text: '我做事比较随性，不太喜欢按部就班', scores: { O: -3 } },
+                    { text: '我经常拖延，不到最后一刻不动手', scores: { C: -3 } },
+                    { text: '在大型社交场合中我会感到不自在', scores: { E: -3 } },
+                    { text: '如果有人冒犯了我，我一定会怼回去', scores: { A: -3 } },
+                    { text: '大部分时间里我的情绪都比较稳定', scores: { N: -3 } },
+                    { text: '我更喜欢熟悉的环境和 routine，不太想改变', scores: { O: -3 } },
+                    { text: '我觉得规矩和流程太多反而会限制效率', scores: { C: -3 } },
+                    { text: '我宁愿一个人安静地看书也不想参加派对', scores: { E: -3 } },
+                    { text: '我会直接指出别人的错误，即使对方可能会不高兴', scores: { A: -3 } },
+                    { text: '即使遇到挫折我也能很快调整好心态', scores: { N: -3 } }
+                ],
+                calculateResult: function(answers) {
+                    let scores = { O: 0, C: 0, E: 0, A: 0, N: 0 };
+                    answers.forEach(a => {
+                        if (a && a.scores) {
+                            const likertWeight = 5 - a.index; // 0=非常符合→5, 4=非常不符合→1
+                            Object.keys(a.scores).forEach(k => {
+                                scores[k] += a.scores[k] * (likertWeight / 3);
+                            });
+                        }
+                    });
+                    const dims = [
+                        { name: '开放性 Openness', key: 'O', min: -18, max: 18 },
+                        { name: '尽责性 Conscientiousness', key: 'C', min: -18, max: 18 },
+                        { name: '外向性 Extraversion', key: 'E', min: -18, max: 18 },
+                        { name: '宜人性 Agreeableness', key: 'A', min: -18, max: 18 },
+                        { name: '神经质 Neuroticism', key: 'N', min: -18, max: 18 }
+                    ];
+                    const scoreBars = dims.map(d => {
+                        const raw = scores[d.key];
+                        const normalized = Math.max(0, Math.min(100, ((raw - d.min) / (d.max - d.min)) * 100));
+                        return { name: d.name, label: Math.round(normalized) + '%', pct: Math.round(normalized) };
+                    });
+                    const levels = {};
+                    dims.forEach(d => {
+                        const raw = scores[d.key];
+                        levels[d.key] = raw > 4 ? '高' : raw > -4 ? '中' : '低';
+                    });
+                    const profiles = {
+                        O: {
+                            high: '你对世界充满好奇，拥有丰富的想象力和创造力。你喜欢新鲜事物，思维开放，常常是朋友圈里最有创意的那个人。你容易被艺术、哲学和抽象概念吸引。',
+                            mid: '你在好奇心和务实之间取得了平衡。你愿意尝试新事物，但不会盲目追求未知。在熟悉和创新之间，你能灵活切换。',
+                            low: '你更偏好熟悉的环境和既定的方式。你喜欢稳定和可预测性，注重实际而非想象。这让你在执行层面非常可靠。'
+                        },
+                        C: {
+                            high: '你是一个高度自律和有条理的人。你做事有计划、有始有终，非常注重细节和效率。你是那种"说到做到"的靠谱存在，朋友们遇到需要organized的事情第一个想到你。',
+                            mid: '你在条理和灵活之间保持平衡。你会做计划但也能接受变化，大部分时候能完成任务，偶尔也会拖延一下。这是一种很健康的工作生活节奏。',
+                            low: '你更随性自由，不太喜欢被计划和规矩束缚。你的创造力往往来自即兴发挥，但有时候也会在deadline前手忙脚乱。'
+                        },
+                        E: {
+                            high: '你是一个充满活力的社交达人。你从与人交往中获得能量，喜欢成为关注的焦点。在聚会中你是那个活跃气氛的人，独处太久反而会让你觉得不自在。',
+                            mid: '你是典型的"中间性格"——既能享受社交也能享受独处。你在需要的时候可以很好地社交，但同样珍惜一个人的时间。大部分人都属于这个区间。',
+                            low: '你是一个安静的内省者。你从独处中获得能量，社交对你来说是消耗而非充电。你喜欢深度而非广度的关系，一两个知己对你来说胜过一群泛泛之交。'
+                        },
+                        A: {
+                            high: '你是一个温暖、善良、富有同理心的人。你信任他人，乐于合作，在冲突中总是那个先让步的人。你的善良让身边的人感到被接纳和理解。',
+                            mid: '你在友善和自我保护之间找到了平衡。你愿意帮助别人但也有底线，在和谐和坚持己见之间能灵活切换。',
+                            low: '你是一个直接而坦诚的人。你不会为了迎合别人而委屈自己，敢于表达不同意见。你可能看起来有点"不好惹"，但你的真诚也是一种难得的品质。'
+                        },
+                        N: {
+                            high: '你对情绪和压力非常敏感。你容易感到焦虑、担忧，情绪起伏较大。但这同时也意味着你对美好的事物有着更强的感知力——你比一般人更容易被一首歌、一部电影打动。',
+                            mid: '你的情绪稳定性处于正常水平。大部分时候你能保持平静，偶尔也会因为重要事情而焦虑。你有一定的自我调节能力，但在极端压力下可能需要支持。',
+                            low: '你是一个情绪极其稳定的人。"泰山崩于前而色不变"说的就是你。你很少焦虑，面对压力也能保持冷静和理智。这种特质让你在危机时刻成为身边人的定心丸。'
+                        }
+                    };
+                    function buildDesc(key) {
+                        const level = levels[key];
+                        const label = level === '高' ? 'high' : level === '中' ? 'mid' : 'low';
+                        return profiles[key][label];
+                    }
+                    const title = '🧬 你的大五人格画像';
+                    let desc = `【开放性】${levels['O']} —— ${buildDesc('O')}\n\n`;
+                    desc += `【尽责性】${levels['C']} —— ${buildDesc('C')}\n\n`;
+                    desc += `【外向性】${levels['E']} —— ${buildDesc('E')}\n\n`;
+                    desc += `【宜人性】${levels['A']} —— ${buildDesc('A')}\n\n`;
+                    desc += `【神经质】${levels['N']} —— ${buildDesc('N')}`;
+                    return { title, desc, scores: scoreBars };
+                }
+            },
+            {
                 id: 'sbti',
                 icon: '🎭',
                 title: 'SBTI人格测试',
